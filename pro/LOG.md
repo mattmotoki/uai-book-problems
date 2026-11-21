@@ -1,0 +1,36 @@
+# Pro query log
+
+| # | Question | Sent | Chat | Result |
+|---|---|---|---|---|
+| 001 | Status map of the six prize problems (+ 36 book pages attached) | 2026-11-20 | https://chatgpt.com/c/6b005a0c-ca54-83ec-b432-7f154d61ae27 | done, ~45 min; summary in docs/PROBLEMS.md |
+| 002 | Calibration C1: Lean proof of the known part of 3.3 (`Targets/Calibration.lean`) | 2026-11-20 | https://chatgpt.com/c/6b005a9a-4160-83ec-952e-6f42a9e48236 | PASS first round (9.5 min). Pro says it compiled in its own sandbox; our check.sh agrees. `HutterPrizes/Calibration.lean`. |
+| 003 | 3.3 counterexample as a Lean development (statement layer + proofs) | 2026-11-20 | https://chatgpt.com/c/6b00641f-b774-83ec-a1e5-72db0a8a338e | PASS first round (~25 min); `HutterPrizes/P33Counterexample.lean`; fidelity review pending |
+| 004 | 2.7F normalized lower bound (`Targets/P27F.lean`) | 2026-11-20 | https://chatgpt.com/c/6b006437-d5b8-83ec-9992-1cc1df45c021 | PASS first round (~25 min); `HutterPrizes/P27F.lean`; statement = frozen target |
+| 005 | 6.3R: uniform ratio M(x)/M(xy) ≤ C·2^K(y|x) fails (`Targets/P63R.lean`) | 2026-11-20 | https://chatgpt.com/c/6b0068c4-c280-83ec-865e-bb69b78dd457 | PASS first round (~20 min); `HutterPrizes/P63R.lean`; statement = frozen target |
+| 006 | 2.3A research attempt (no Lean yet) | 2026-11-20 | https://chatgpt.com/c/6b0068ee-9c48-83ec-8c6a-8974ff998fc4 | blocked by ChatGPT safety filter ("content can't be shown") after ~25 min; resent as 006b |
+| 006b | 2.3A research attempt, resent with a "pure mathematics" line | 2026-11-20 | https://chatgpt.com/c/6b006e3e-72d0-83ec-a03a-55c4ba47df2d | done (~30 min): no solution; obstruction + partial results |
+| 007 | 3.3 for two universal mixtures (research) | 2026-11-20 | https://chatgpt.com/c/6b006e1c-d8ec-83ec-bb9d-e4e79c315bae | done (~30 min): lifts with non-effective priors |
+| 008 | 3.3 with effective universal priors (follow-up in 007 chat) | 2026-11-20 | https://chatgpt.com/c/6b006e1c-d8ec-83ec-bb9d-e4e79c315bae | done (~30 min): claims effective counterexample incl. two Solomonoff priors, gap ≍ n^{1/4}; new source μ; referee + Lean pending |
+| 009 | 2.3A: attack the subtraction gap (follow-up in 006b chat) | 2026-11-20 | https://chatgpt.com/c/6b006e3e-72d0-83ec-a03a-55c4ba47df2d | done (~30 min): not solved; adversary theorem, layer-additive Q_K, exact reductions |
+| 010 | Lean: Theorem 3 of 008 (finite experiment robust to any semimeasure background) | 2026-11-20 | https://chatgpt.com/c/6b007bf6-3c58-83ec-918b-275920c70fb4 | done: compiles after one fix (missing ')' at line 255, Markdown copy); check PASS |
+| 011 | 2.3A: work the reduction, combine layer envelopes, novelty check (follow-up in 006b chat) | 2026-11-20 | https://chatgpt.com/c/6b006e3e-72d0-83ec-a03a-55c4ba47df2d | done: not solved; weighted envelopes fail; reduces to one integer-flow lemma (§5); several earlier results are known |
+| 012 | Lean: Theorem 4 aggregation of 008 (n^{1/4} gap over any background M), builds on P33Theorem3 | 2026-11-21 | https://chatgpt.com/c/6b00846a-6510-83ec-83fc-1618b62d8040 | done: compiled first try; check PASS |
+| 013 | 2.3A: prove or refute GO(P), fresh chat with 011 attached | 2026-11-21 | https://chatgpt.com/c/6b00849f-79b4-83ec-8ae7-4acada4f0ab8 | done: reduction valid; GO(P) not settled; partial results |
+| 014 | Lean capstone: effective 3.3 (ξ± lsc, universal, M = universalContinuousSemimeasure) | 2026-11-21 | https://chatgpt.com/c/6b008c8e-15c8-83ec-971b-33730c631141 | done: compiled first try; check PASS |
+| 015 | 6.3 research (book pp. 189-192, 207-208 attached as PDF, gitignored) | 2026-11-21 | https://chatgpt.com/c/6b008c8f-3658-83ec-afda-630344b3d936 | done: easy parts proved; 6.3N open (corrected by (m+1)2^K(m)); last question refuted (Thm 5) |
+| 016 | Lean: prove `Targets/P63E.lean` (error-count ≤ C·2^K(y|x) fails for every predictor) | 2026-11-21 | https://chatgpt.com/c/6b0095c5-57f0-83ec-8977-5acb3904ab50 | done: compiled; statements identical to target; check PASS |
+| 017 | 6.3N follow-up (in 015 chat) | 2026-11-21 | https://chatgpt.com/c/6b008c8f-3658-83ec-afda-630344b3d936 | done: passive case = halving (book); AI case open; AI/SP separation can be large |
+| 018 | Lean: 3.3 capstone as two Bayes mixtures over treeLSCEnum (μ ∈ class, weight ratio ≤ 3) | 2026-11-21 | https://chatgpt.com/c/6b0096be-cc1c-83ec-af6b-11681795f29b | done: compiled first try; check PASS |
+| 019 | 6.2(d) polynomial bound for AIξ h=1 (follow-up in 015 chat) | 2026-11-21 | https://chatgpt.com/c/6b008c8f-3658-83ec-afda-630344b3d936 | done: open; Leike-Hutter 2015 §6.1 exclude horizon 1; partial comparison theorems |
+| 020 | 2.7 stochastic/expected version + 2.7F novelty | 2026-11-21 | https://chatgpt.com/c/6b009dc3-5424-83ec-8073-199055592ddb | blocked by ChatGPT safety filter after ~6 min; resend as 020b |
+| 020b | 2.7 stochastic, resent in a new chat | 2026-11-21 | https://chatgpt.com/c/6b00a557-0214-83ec-9b0c-5841925a3c49 | done: i.o. expected lower bounds for every M ∈ 𝒜, computable μ; O(2^-K(t)) upper bound fails; 2.7F known (Hutter 2007) |
+| 021 | Lean: 2.7 block lemma (finite part of 020b Thm 1) | 2026-11-21 | https://chatgpt.com/c/6b00ae91-3054-83ec-b57d-6ab63f58617a | done: P27.block_bound_of_joint = (15) exactly; my literal form had wrong constants (refuted in Lean) |
+| 022 | Lean: full proof of target P27Stochastic (020b Thm 1) | 2026-11-21 | https://chatgpt.com/c/6b00b823-5954-83ec-b07f-680c1f7850af | done: full proof, statement identical to target, check PASS |
+| 023 | Research: 2.7 eventual expected lower bound (E), 𝒜 and 𝓑 | 2026-11-21 | https://chatgpt.com/c/6b00c20d-420c-83ec-9022-103a3e8e2046 | done: (E) open; witnesses in every infinite c.e. set of times and every O(log t) window; one-time concentration possible in 𝓑; referee running |
+| 024 | Lean: 023 Lemma 1 (selective forcing) | 2026-11-21 | https://chatgpt.com/c/6b00cfd0-4ee8-83ec-bb95-c18d9f0ef879 | done: P27.selective_forcing (Lemma 1, no full support needed), check PASS |
+| 025 | Lean: P27Selection target (023 Thm 1, Cor 2) | 2026-11-21 | https://chatgpt.com/c/6b00daaf-ce88-83ec-86d5-a6cf33e09b1b | done: both theorems proved, statements identical to target, check PASS |
+| 026 | Lean: P27Spikes target (020b Thm 6, mix form) | 2026-11-21 | https://chatgpt.com/c/6b00e8c4-0ba8-83ec-987e-a81ae903a2a3 | done: both theorems proved, statements identical, check PASS |
+| 027 | Research: 3.3 over measure classes (M_comp), exact 2^-K(ν) priors, 'yes' readings | 2026-11-21 | https://chatgpt.com/c/6b00ebc6-09a4-83ec-a4bf-b7f31451713c | done: Thm 2 gap over all computable measures (ratio [1/3,3]); Thm 4 exact 2^-K priors under two machines; Props 6-7 positive for log/quadratic loss and margin; referee running |
+| 028 | Lean: P33Complexity target (3.3 with 2^-K(i) weights) | 2026-11-21 | https://chatgpt.com/c/6b00ed71-f0bc-83ec-9563-4a6c3b398b0e | done: proved, statement identical, check PASS |
+| 029 | P33Measures Lean proof (3.3 over computable rational-conditional measures) | https://chatgpt.com/c/6b00ffbe-f610-83ec-add6-fccb5b31e793 | done: proved, statement identical, check PASS |
+| 030 | P33Exact Lean proof (3.3 with exact 2^-K(i) weights, two optimal prefix machines) | https://chatgpt.com/c/6b011e5b-b210-83ec-8f1c-02cd0cdcadb3 | done: proved, statement identical, check PASS |

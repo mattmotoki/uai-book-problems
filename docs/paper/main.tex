@@ -1,0 +1,1722 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage[numbers,sort]{natbib}
+\PassOptionsToPackage{obeyspaces,spaces}{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+
+% Bold math in bold headings (article defaults plus \boldmath).
+\makeatletter
+\renewcommand\section{\@startsection{section}{1}{\z@}%
+  {-3.5ex \@plus -1ex \@minus -.2ex}{2.3ex \@plus.2ex}%
+  {\normalfont\Large\bfseries\boldmath}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+  {-3.25ex\@plus -1ex \@minus -.2ex}{1.5ex \@plus .2ex}%
+  {\normalfont\large\bfseries\boldmath}}
+\renewcommand\paragraph{\@startsection{paragraph}{4}{\z@}%
+  {3.25ex \@plus1ex \@minus.2ex}{-1em}%
+  {\normalfont\normalsize\bfseries\boldmath}}
+\makeatother
+
+% Lists: a small gap above and below, none between items.
+\setlist[itemize]{topsep=0.4\baselineskip,itemsep=0pt,parsep=0pt}
+
+% Notation
+\newcommand{\B}{\{0,1\}}
+\newcommand{\Bs}{\{0,1\}^*}
+\newcommand{\eps}{\epsilon}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\cM}{\mathcal{M}}
+\newcommand{\cMone}{\mathcal{M}_1}
+\newcommand{\cCQ}{\mathcal{C}_{\mathbb{Q}}}
+\newcommand{\cCcomp}{\mathcal{C}_{\mathrm{comp}}}
+\newcommand{\ind}{\mathbf{1}}
+\newcommand{\Mnorm}{M_{\mathrm{norm}}}
+\newcommand{\geqx}{\mathrel{\stackrel{\times}{\geq}}}
+\newcommand{\leqx}{\mathrel{\stackrel{\times}{\leq}}}
+\newcommand{\eqx}{\mathrel{\stackrel{\times}{=}}}
+\newcommand{\KL}{D_{\mathrm{KL}}}
+\newcommand{\AI}{\mathrm{AI}}
+\newcommand{\SP}{\mathrm{SP}}
+\newcommand{\KM}{\mathrm{KM}}
+\newcommand{\AIxi}{\textup{AI}\ensuremath{\xi}}
+\newcommand{\lean}[1]{\path{#1}}
+\newcommand{\todo}[1]{\textbf{[TODO: #1]}}
+% Replace with the public repository URL, e.g. \url{https://...}.
+\newcommand{\repourl}{\url{https://github.com/mattmotoki/uai-book-problems}}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{Answers to three prize problems from Hutter's\\ \emph{Universal Artificial Intelligence}}
+\author{Matt Motoki\\
+Independent researcher\\
+\texttt{mattmotoki@gmail.com}}
+\date{Draft, November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We report answers to three prize problems from Marcus Hutter's book
+\emph{Universal Artificial Intelligence} (2005).
+\emph{Problem 3.3} asks whether the cumulative 0-1 losses of the Bayes
+predictors of two mixtures over the same class differ by a finite amount.
+The answer is no, also in the book's own setting, where the class is a
+countable class of probability measures. For the class of probability
+measures with computable rational conditionals, and for every positive prior
+$a$ on it, we give two priors $w^\pm\ge2^{-20}a$ whose ratio is between $1/3$
+and $3$, and a computable measure $\mu$ in the class that does not depend on
+$a$, such that the $\mu$-expected loss difference of the two Bayes mixtures is
+at least $n^{1/4}/256$ after $n\ge2$ steps. A paper step extends this to all
+computable probability measures. The same bound holds for two Bayes mixtures
+over an enumeration of all lower semicomputable semimeasures, also with the
+exact weights $2^{-K(i)}$ of the universal prior, for two constructed optimal
+prefix machines and one constructed enumeration, where the two mixtures differ
+only in the machine that defines $K$ (formal bound $n^{1/4}/512$ for $n\ge3$). A simpler two-measure example has a difference of
+at least $H_n/32$. For log loss, quadratic loss, and sources with a uniform
+decision margin, the difference is known to stay bounded.
+\emph{Problem 6.3} ends with the question whether the number of errors of the
+universal agent in cycles $k$ to $n$ is bounded by a constant times
+$2^{K(\dot z_{k:n}\mid \dot z_{<k})}$. For ordinary conditional prefix
+complexity, the answer is no, for every deterministic predictor.
+\emph{Problem 2.7} asks whether the normalized universal predictor $\Mnorm$
+has lower error bounds of order $2^{-K(t)}$. We prove that, for every
+universal semimeasure and every computable measure, the expected one-step error
+of $\Mnorm$ is at least $c\,2^{-K(t)}$ at some time in every late window of
+length $O(\log t)$, and along every computable selection of times. We also
+show that no positive power of $2^{-K(t)}$ is an upper bound for all universal
+$\Mnorm$, already for the fair coin. The bound at every large $t$ stays open;
+we show that a set of times along which the expected error divided by
+$2^{-K(t)}$ tends to $0$ must be immune.
+The main theorems are checked in Lean~4.
+\end{abstract}
+
+\tableofcontents
+
+%======================================================================
+\section{Introduction}
+%======================================================================
+
+Hutter's monograph \emph{Universal Artificial Intelligence}~\cite{hutter2005uai}
+ends each chapter with problems, and its web page~\cite{hutterprizepage} offers
+prizes for some of them. This paper reports our answers to three of them.
+
+\paragraph{Problem 3.3 (comparing two mixtures).}
+Let $\xi$ and $\xi'$ be two Bayes mixtures over the same class $\cM$, with
+positive prior weights, and let the true environment $\mu$ be in $\cM$. The
+known part of the problem bounds the $\mu$-expected squared distance between
+their predictions and the difference of their losses by
+$O\bigl((L^{\Lambda_\mu}_n)^{1/2}\bigr)$. The book then asks~\cite[p.~120]{hutter2005uai}:
+\begin{quote}
+``Is the stronger result $L_\infty^{\Lambda_\xi}-L_\infty^{\Lambda_{\xi'}}<\infty$ also true?''
+\end{quote}
+Both total losses are usually infinite, so we read the question as:\ is the
+sequence $L_n^{\Lambda_\xi}-L_n^{\Lambda_{\xi'}}$ bounded? We answer no
+(Section~\ref{sec:33}). In the book's Section~3.2.2, where the problem is set,
+$\cM$ is a countable class of probability measures~\cite[p.~70]{hutter2005uai}.
+Theorem~\ref{thm:measures} answers the problem in this setting. Take the class
+of probability measures with computable rational conditionals, and any prior
+$a$ on it with $a_\nu>0$ and $\sum_\nu a_\nu=1$. Then there are priors
+$w^\pm\ge2^{-20}a$ with $w^-_\nu/w^+_\nu\in[1/3,3]$ whose Bayes mixtures have a
+loss difference of at least $n^{1/4}/256$ under one fixed computable $\mu$ in
+the class. A paper step (Corollary~\ref{cor:allmeasures}) gives the same result
+for all computable probability measures. The same construction gives two Bayes
+mixtures over an enumeration of all lower semicomputable semimeasures
+(Theorem~\ref{thm:mixture}), with weights $w^\pm_i>0$, $\sum_i w^\pm_i=1$ and
+$w^-_i/w^+_i\in[1/3,3]$, a version with weights within constant factors of
+$2^{-K(i)}$ (Theorem~\ref{thm:complexity}), and a version with the exact
+weights: two universal mixtures $\sum_i2^{-K_C(i)}\tau_i$ over one constructed
+enumeration $\tau$ that differ only in the constructed optimal prefix machine $C$
+(Theorem~\ref{thm:exact}). All three have the bound $n^{1/4}/256$ for $n\ge2$
+(for Theorem~\ref{thm:exact}, the formal bound is $n^{1/4}/512$ for $n\ge3$).
+Section~\ref{sec:33} also marks where the answer turns positive: log loss,
+quadratic loss, and sources with a uniform decision margin.
+
+\paragraph{Problem 6.3 (posterization of prediction errors).}
+The problem leads to a bound on the number $E_{k:n}$ of errors of the agent
+\AIxi{} in cycles $k$ to $n$,
+\[
+E_{k:n}\leqx\xi^{\AI}(\dot y\dot x_{<k})/\xi^{\SP}(\dot z_{1:n}),
+\]
+where $\dot y\dot x_{<k}$ is the action-perception history before cycle $k$,
+and then asks~\cite[p.~208]{hutter2005uai}:
+\begin{quote}
+``Is it possible to improve the numerator to $\xi^{\SP}(\dot z_{<k})$ and to
+bound the expression by $\approx 2^{K(\dot z_{k:n}|\dot z_{<k})}$ (cf.\ Problem 3.13)?''
+\end{quote}
+The two improvements form a chain
+$E_{k:n}\lesssim \xi^{\SP}(\dot z_{<k})/\xi^{\SP}(\dot z_{1:n})\lesssim 2^{K(\dot z_{k:n}|\dot z_{<k})}$.
+We show that the end of the chain is false: with ordinary conditional prefix
+complexity, no constant $C$ gives
+$E_{k:n}\le C\,2^{K(\dot z_{k:n}|\dot z_{<k})}$, for \AIxi{} with any fixed tie
+rule and for every other deterministic predictor
+(Theorem~\ref{thm:63E}, Section~\ref{sec:63}). The first link of the chain and
+the version with Chernov and Hutter's complexity $K_*$ stay open.
+
+\paragraph{Problem 2.7 (lower convergence bounds and defect of $M$).}
+For Solomonoff's universal semimeasure $M$, the book proves a lower bound of
+order $2^{-K(t)}$ on the one-step prediction error at every time $t$; the bound
+comes from the defect $1-\sum_{x_t}M(x_t|x_{<t})$. It then
+asks~\cite[p.~62]{hutter2005uai}:
+\begin{quote}
+``Do similar lower performance bounds hold for measure
+\[\Mnorm(x_t|x_{<t}):=M(x_t|x_{<t})/\textstyle\sum_{x_t}M(x_t|x_{<t}),\]
+which has no defect? For which sequences does equality $\eqx 2^{-K(t)}$ hold?''
+\end{quote}
+For deterministic environments the answer follows from Hutter's later
+paper~\cite{hutter2007bayesconf} (Proposition~\ref{prop:27F}). For stochastic
+environments we prove expected lower bounds of order $2^{-K(t)}$ at a time in
+every late window of length $O(\log t)$, and infinitely often along every
+computable selection of times, with a constant that depends on the selection
+(Theorem~\ref{thm:selection} and its corollaries). On the upper side, we show that some universal $M$ has fair-coin
+expected errors that are not $O(2^{-\alpha K(t)})$ for any $\alpha>0$
+(Theorem~\ref{thm:spikes}). Whether the lower bound holds at every large $t$
+stays open; Proposition~\ref{prop:immune} gives a constraint on a
+counterexample.
+
+\paragraph{Method and formal verification.}
+For each result, we first fixed a Lean~4 statement and had it reviewed against
+the book's text. The proofs were then checked in Lean~4 with
+Mathlib~\cite{mathlib2020} and the library
+\texttt{kolmogorov-complexity-lean}~\cite{milovanovlean}.
+Section~\ref{sec:formal} lists the theorem names. The paper proofs below are
+complete and do not depend on the formal proofs. Where the formal statement is
+narrower than the paper statement (rational conditional probabilities, a class
+indexed by its conditionals, semimeasures with root mass $1$, a fixed tie
+rule, a weaker constant), we say so at the theorem.
+
+\paragraph{Summary.}
+Table~\ref{tab:summary} lists the results.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{3.9cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{3.7cm}@{}}
+\toprule
+Result & Statement (short) & Status \\
+\midrule
+Thm.~\ref{thm:warmup} & 3.3, two measures: difference $\ge H_n/32$ & new answer; Lean \\
+\addlinespace
+Thm.~\ref{thm:robust}, \ref{thm:aggregate} & finite robust experiment; aggregation over any positive background & Lean \\
+\addlinespace
+Thm.~\ref{thm:mixture} & 3.3, two Bayes mixtures over all lsc semimeasures: difference $\ge n^{1/4}/256$ & new answer; Lean \\
+\addlinespace
+Thm.~\ref{thm:complexity} & 3.3 with weights $\asymp 2^{-K(i)}$ & new answer; Lean \\
+\addlinespace
+Thm.~\ref{thm:exact} & 3.3 with exact weights $2^{-K_{C_\pm}(i)}$: two universal mixtures that differ only in the constructed optimal prefix machines $C_\pm$ & new answer; Lean \\
+\addlinespace
+Thm.~\ref{thm:measures}, Cor.~\ref{cor:allmeasures} & 3.3 in the book's setting: two Bayes mixtures over the probability measures with computable rational conditionals (Cor.: all computable probability measures), priors $w^\pm\ge2^{-20}a$ from any positive base prior $a$: difference $\ge n^{1/4}/256$ & new answer; Lean (Cor.: paper step) \\
+\addlinespace
+Thm.~\ref{thm:63E} & 6.3, last question: no bound $C\,2^{K(y|x)}$ & new answer (extends a known mechanism); Lean \\
+\addlinespace
+Prop.~\ref{prop:27F} & 2.7, deterministic: $\Mnorm(b|x)\ge c\,2^{-K(t)}$ & known~\cite{hutter2007bayesconf}; Lean for one $M$ \\
+\addlinespace
+Thm.~\ref{thm:selection}, Cor.~\ref{cor:window}, \ref{cor:dyadic} & 2.7, expected lower bounds along selections, in $O(\log t)$ windows, in dyadic blocks & partial answer; Lean \\
+\addlinespace
+Thm.~\ref{thm:spikes} & 2.7, no upper bound $O(2^{-\alpha K(t)})$ for all $M$ & partial answer; Lean \\
+\addlinespace
+Prop.~\ref{prop:immune} & 2.7, quiet sets of times (where error$/2^{-K(t)}\to0$) are immune & constraint on the open case \\
+\bottomrule
+\end{tabularx}
+\caption{Results. ``Lean'' means that the stated formal version has a complete
+Lean proof that uses only the three standard axioms.}
+\label{tab:summary}
+\end{table}
+
+%======================================================================
+\section{Preliminaries}\label{sec:prelim}
+%======================================================================
+
+\paragraph{Strings.}
+$\B^*$ is the set of finite binary strings, $\eps$ the empty string, $|x|$ the
+length of $x$. For a string or sequence $x$, $x_{<t}=x_1\dots x_{t-1}$ and
+$x_{k:n}=x_k\dots x_n$. We write $\bar b=1-b$ for a bit $b$.
+
+\paragraph{Semimeasures.}
+A \emph{semimeasure} is a function $\nu:\Bs\to[0,1]$ with $\nu(\eps)\le1$ and
+$\nu(x0)+\nu(x1)\le\nu(x)$ for all $x$. It is a \emph{(probability) measure}
+if $\nu(\eps)=1$ and equality holds for all $x$. A function
+$f:\Bs\to[0,\infty)$ is \emph{lower semicomputable} (lsc) if there is a
+computable $\phi:\Bs\times\N\to\mathbb{Q}$, nondecreasing in its second
+argument, with $\lim_s\phi(x,s)=f(x)$. A family is uniformly lsc if one
+$\phi$ works for all members. Let $\cM$ be the set of lsc semimeasures (the
+book's class $\cM_U$, \cite[p.~48]{hutter2005uai}) and $\cMone\subseteq\cM$
+the members with $\nu(\eps)=1$. A measure $\mu$ is \emph{computable} if
+$\mu(x)$ is a computable real, uniformly in $x$; it has \emph{rational
+conditionals} if $x\mapsto\mu(1|x)$ is a computable function into
+$\mathbb Q$. Computable measures are lsc, so they belong to $\cMone$.
+A semimeasure $M$ is \emph{universal} if it
+is lsc and for every $\nu\in\cM$ there is $c>0$ with $M\ge c\nu$. A universal
+semimeasure dominates the uniform measure $\lambda(x)=2^{-|x|}$, so
+$M(x)>0$ for all $x$.
+
+\begin{lemma}[root lifting]\label{lem:root}
+For $\nu\in\cM$ let $\nu^\uparrow(\eps)=1$ and $\nu^\uparrow(x)=\nu(x)$ for
+$x\neq\eps$. Then $\nu^\uparrow\in\cMone$ and $\nu\le\nu^\uparrow$. Hence a
+semimeasure dominates every member of $\cM$ if and only if it dominates every
+member of $\cMone$, and an lsc semimeasure $M$ is universal if and only if
+$M^\uparrow$ is.
+\end{lemma}
+
+\begin{proof}
+Raising the value at $\eps$ to $1$ keeps the inequality
+$\nu(0)+\nu(1)\le\nu(\eps)\le1$, and lower semicomputability is unchanged.
+If $M\ge c\nu^\uparrow$ for all $\nu$, then $M\ge c\nu$. If $M\ge c\nu$ for all
+$\nu\in\cM$, then for $\nu\in\cMone$ this is the claim. Finally, let $M$ be
+lsc. Then $M^\uparrow$ is lsc. If $M$ or $M^\uparrow$ is universal, it
+dominates $\lambda$, so $M(\eps)\ge M(0)>0$. Then $M^\uparrow\ge M$ and
+$M^\uparrow\le M/M(\eps)$, so the two dominate the same semimeasures.
+\end{proof}
+
+All predictions below compare or normalize values $s(x0),s(x1)$ of a
+semimeasure at nonempty strings. They never read $s(\eps)$. So
+Lemma~\ref{lem:root} lets us state the formal results for $\cMone$ without
+loss. The library~\cite{milovanovlean} works with $\cMone$; we say so where it
+matters.
+
+\paragraph{Prefix complexity.}
+Fix an optimal prefix machine $U$. $K(x)$ and $K(y|x)$ are the prefix
+complexity and the conditional prefix complexity, where the program for $y$
+receives all of $x$ (so $|x|$ is free). For $t\in\N$, $K(t)$ is the complexity
+of a standard binary code of $t$, and $\kappa_t:=2^{-K(t)}$. We use three standard
+facts~\cite{livitanyi}:
+\begin{align}
+&\textstyle\sum_{t}\kappa_t\le1 \quad\text{(Kraft)}, \label{eq:kraft}\\
+&\kappa_t\ge c_0(t+1)^{-2}\ \text{for a constant } c_0>0, \label{eq:wlower}\\
+&g:\N\to[0,\infty)\ \text{lsc with } \textstyle\sum_n g(n)\le1
+\ \Longrightarrow\ g(n)\le C_g\,\kappa_n\ \text{for all } n \quad\text{(coding theorem)}. \label{eq:coding}
+\end{align}
+The function $t\mapsto \kappa_t$ is lsc. For a computable $F:\Bs\to\Bs$ there is
+a constant $b_F$ with $K(F(x)|x)\le b_F$ for all $x$.
+
+\paragraph{Bayes decisions for 0-1 loss.}
+For a semimeasure $s$ with $s>0$ and a history $h$, the Bayes action for
+binary 0-1 loss compares $s(h0)$ and $s(h1)$. We write $\Lambda_s(h)=1$ if
+$s(h1)>s(h0)$, $\Lambda_s(h)=0$ if $s(h1)<s(h0)$, and apply a fixed tie rule
+if they are equal. ``Ties toward 1'' means $\Lambda_s(h)=1$ if and only if
+$s(h1)\ge s(h0)$. This is the book's action $y^{\Lambda_s}$ of eq.~(3.45) for
+0-1 loss; it is scale invariant, so it is the same for $s$ and for its
+normalization
+\[
+q_s(b|h):=\frac{s(hb)}{s(h0)+s(h1)} .
+\]
+With ties toward 1, $\Lambda_s(h)=1$ if and only if $q_s(1|h)\ge 1/2$.
+For a measure $\mu$ the expected cumulative loss (book eq.~(3.46)) is
+\[
+L_n^{s}:=\E_\mu\sum_{t=1}^n \ind\{\Lambda_s(X_{<t})\neq X_t\}
+=\sum_{t=1}^n\sum_{|h|=t-1}\mu(h)\,r_0(h,\Lambda_s(h)),
+\]
+with the one-step risk $r_0(h,1)=\mu(0|h)$ and $r_0(h,0)=\mu(1|h)$.
+We write $L^s_n$ for the book's $L_n^{\Lambda_s}$.
+
+\paragraph{Two inequalities.}
+For binary distributions $p=(1-p_1,p_1)$, $q=(1-q_1,q_1)$ with $q_1\in(0,1)$:
+\begin{equation}\label{eq:chi2}
+\KL(p\Vert q)\ge 2(p_1-q_1)^2 \quad\text{(Pinsker)},\qquad
+\frac{p_0^2}{q_0}+\frac{p_1^2}{q_1}=1+\frac{(p_1-q_1)^2}{q_0q_1}\ge1 .
+\end{equation}
+For probability laws $P,Q$ on $\B^N$ given by conditionals $p,q$,
+the chain rule gives
+\[
+\KL(P\Vert Q)=\sum_{t=1}^N\E_P\,\KL(p(\cdot|X_{<t})\Vert q(\cdot|X_{<t})),
+\]
+and the hybrid argument (replace the conditionals of $Q$ by those of $P$ one time
+step at a time) gives
+\begin{equation}\label{eq:hybrid}
+\|P-Q\|_1\le\sum_{t=1}^N\E_P\,\|p(\cdot|X_{<t})-q(\cdot|X_{<t})\|_1 .
+\end{equation}
+
+%======================================================================
+\section{Problem 3.3: two mixtures with unbounded loss difference}\label{sec:33}
+%======================================================================
+
+The known part of Problem 3.3 states
+$\sum_t\E[\sum_{x_t}(\xi(x_t|x_{<t})-\xi'(x_t|x_{<t}))^2]\le2[\ln w_\mu^{-1}+\ln (w'_\mu)^{-1}]$
+and $L_n^{\xi}-L_n^{\xi'}\le O\bigl((L^{\mu}_n)^{1/2}\bigr)$. The predictions of $\xi$
+and $\xi'$ merge. The 0-1 decision is a threshold of the prediction at
+$1/2$. If $\mu(1|x_{<t})$ approaches $1/2$ at a rate $\delta_t$ with
+$\sum_t\delta_t^2<\infty$ and $\sum_t\delta_t=\infty$, the data never reveal
+whether the bias is $+\delta_t$ or $-\delta_t$ (a Kakutani-type
+indistinguishability), and two priors that favor different signs keep making
+different decisions. Each different decision costs $2\delta_t$ in expectation,
+and the sum diverges. The same mechanism appears in the book's
+Section~3.6 and Problem~3.6~\cite[pp.~98, 120]{hutter2005uai} and in
+Hutter~\cite[p.~988]{hutter2003jmlr}, where a class $\{\mu_1,\mu_2\}$ with
+$\mu(1|x_{<t})=\frac12\pm\varepsilon_t$ shows that the regret of \emph{one}
+mixture against the informed predictor can diverge. Problem 3.3 compares
+\emph{two} mixtures; our first example is in the same family.
+
+\subsection{A two-measure example}
+
+\begin{theorem}[two measures]\label{thm:warmup}
+Let $\delta_t=1/(32t)$. Let $\mu$ and $\nu$ be the product measures with
+$\mu(1|x_{<t})=\frac12+\delta_t$ and $\nu(1|x_{<t})=\frac12-\delta_t$. Let
+$\zeta_-=\frac14\mu+\frac34\nu$ and $\zeta_+=\frac34\mu+\frac14\nu$, two Bayes
+mixtures over $\cM=\{\mu,\nu\}$ with positive weights. With 0-1 loss and ties
+toward $0$, for every $n\ge1$,
+\[
+\frac{H_n}{32}\le L_n^{\zeta_-}-L_n^{\zeta_+}\le\frac{H_n}{16},
+\qquad H_n=\sum_{t=1}^n\frac1t .
+\]
+In particular the difference is unbounded. Both measures are computable with
+rational conditionals. (Formal version: the lower bound and unboundedness; the
+upper bound is a paper step.)
+\end{theorem}
+
+\begin{proof}
+Fix $t$ and a history $h$ of length $t-1$; put $a=\mu(h)>0$, $b=\nu(h)>0$,
+$\delta=\delta_t$. For a mixture $\zeta=w_\mu\mu+w_\nu\nu$,
+$\zeta(h1)-\zeta(h0)=2\delta(w_\mu a-w_\nu b)$. With ties toward 0,
+$\Lambda_{\zeta_-}(h)=1$ if and only if $a>3b$, and $\Lambda_{\zeta_+}(h)=1$ if and
+only if $3a>b$. So $\Lambda_{\zeta_-}(h)=1$ implies $\Lambda_{\zeta_+}(h)=1$. The
+risks under $\mu$ are $r(h,1)=\frac12-\delta$ and $r(h,0)=\frac12+\delta$, so
+$g(h):=r(h,\Lambda_{\zeta_-}(h))-r(h,\Lambda_{\zeta_+}(h))$ is $2\delta$ if
+$b/3<a\le 3b$ (the decisions differ) and $0$ otherwise. We claim
+\begin{equation}\label{eq:warmup-pointwise}
+a\,g(h)\ge2\delta\Bigl(a-\frac{4(b-a)^2}{a}\Bigr).
+\end{equation}
+If the decisions differ, the left side is $2\delta a$. If they agree, then
+$a>3b$ or $b\ge3a$; in both cases $|b-a|\ge a/2$, and the right side is
+$\le0$.
+
+Let $R(h)=\nu(h)/\mu(h)$. Summing~\eqref{eq:warmup-pointwise} over $|h|=t-1$
+(its left side is $\mu(h)g(h)$) gives
+\[
+\sum_{|h|=t-1}\mu(h)g(h)\ge2\delta_t\bigl(1-4\,\E_\mu[(R-1)^2]\bigr).
+\]
+Since $\E_\mu R=1$ and the bits are independent,
+\[
+\E_\mu R^2=\prod_{s<t}\biggl(\sum_{c\in\B}\frac{\nu_s(c)^2}{\mu_s(c)}\biggr)
+=\prod_{s<t}\Bigl(1+\frac{16\delta_s^2}{1-4\delta_s^2}\Bigr)
+\le\exp\biggl(\sum_{s\ge1}\frac{16}{1020\,s^2}\biggr)<1.03<\frac98,
+\]
+using~\eqref{eq:chi2} for each factor and $1-4\delta_s^2\ge 1020/1024$.
+So $\E_\mu[(R-1)^2]=\E_\mu R^2-1\le\frac18$, and the expected one-step
+difference at time $t$ is at least $\delta_t$. Summing over $t\le n$ gives the
+lower bound. Each one-step difference is at most $2\delta_t$, which gives the
+upper bound.
+\end{proof}
+
+The class here is a class of computable
+probability measures, which is the setting of the book's Chapter~3
+(cf.\ Problem 3.1). The rest of this section strengthens the example to
+universal mixtures. Section~\ref{sec:33measures} then returns to classes of
+computable probability measures, with an arbitrary positive base prior.
+
+\subsection{A finite experiment that survives any small background}
+
+A universal mixture contains every computable environment, so it cannot be
+kept away from the decision boundary by choosing the class. The core of the
+construction is a finite experiment whose decision gap survives any added
+background semimeasure of relative weight at most $2^{-20}$.
+
+\begin{theorem}[robust finite experiment]\label{thm:robust}
+Let $k\ge1$, $N=k^2$ and $\gamma=1/(32k)$. Let $\mu^+_N,\mu^-_N$ be the measures
+with independent bits, $\mu^+_N(1|h)=\frac12+\gamma$ and $\mu^-_N(1|h)=\frac12-\gamma$
+for $|h|<N$, and fair bits after time $N$. Let
+$\pi_-=\frac14\mu^+_N+\frac34\mu^-_N$ and $\pi_+=\frac34\mu^+_N+\frac14\mu^-_N$.
+Let $A$ be any semimeasure with $A(\eps)=1$, let $0\le\eta\le2^{-20}$, and let
+$s_\pm=(1-\eta)\pi_\pm+\eta A$. With 0-1 loss, ties toward 1, and losses under
+$\mu^+_N$,
+\[
+\frac{k}{32}\le L_N^{s_-}-L_N^{s_+}\le\frac{k}{16},
+\]
+and every one-step expected loss difference is nonnegative.
+\end{theorem}
+
+\begin{proof}
+Write $\mu^\pm=\mu^\pm_N$ and $R_m=\mu^-(X_{1:m})/\mu^+(X_{1:m})$.
+
+\emph{Step 1 (most histories have a margin).} For $m<N$, $\E_{\mu^+} R_m=1$ and,
+as in the proof of Theorem~\ref{thm:warmup},
+\[
+\E_{\mu^+} R_m^2=\Bigl(1+\frac{16\gamma^2}{1-4\gamma^2}\Bigr)^m
+\le\exp\Bigl(\frac{16N\gamma^2}{1-4\gamma^2}\Bigr)\le e^{4/255}<\frac{255}{251},
+\]
+because $N\gamma^2=1/1024$ and $1-4\gamma^2\ge255/256$. By Chebyshev's
+inequality,
+$\Pr_{\mu^+}\{R_m\notin[\frac12,2]\}\le\Pr_{\mu^+}\{|R_m-1|\ge\frac12\}\le4(\E_{\mu^+} R_m^2-1)\le\frac{16}{251}$.
+Call a history $h$ with $|h|<N$ \emph{good} if $R(h)=\mu^-(h)/\mu^+(h)\in[\frac12,2]$.
+A direct computation gives
+\[
+q_{\pi_-}(1|h)=\frac12+\gamma\,\frac{1-3R(h)}{1+3R(h)},\qquad
+q_{\pi_+}(1|h)=\frac12+\gamma\,\frac{3-R(h)}{3+R(h)} .
+\]
+Both fractions are decreasing in $R$, so on good histories
+$q_{\pi_-}(1|h)\le\frac12-\frac\gamma5$ and $q_{\pi_+}(1|h)\ge\frac12+\frac\gamma5$.
+The expected number of good rounds among $t=1,\dots,N$ is at least
+$(1-\frac{16}{251})N>\frac34N$.
+
+\emph{Step 2 (the background moves few decisions).}
+Let $\bar s$ be the probability measure with conditionals $q_s$. Since
+$s(h0)+s(h1)\le s(h)$, the product of the conditionals along $x$ gives
+$\bar s(x)\ge s(x)/s(\eps)=s(x)$, and $s(\eps)=1$. So
+$\bar s_\pm\ge s_\pm\ge(1-\eta)\pi_\pm$ on strings of length $\le N$, and
+$\KL(\pi_\pm\Vert\bar s_\pm)\le\ln\frac1{1-\eta}$ on $\B^N$. The chain rule
+and Pinsker's inequality~\eqref{eq:chi2} give
+\[
+\sum_{t=1}^N\E_{\pi_\pm}\bigl(q_{s_\pm}(1|X_{<t})-q_{\pi_\pm}(1|X_{<t})\bigr)^2
+\le\frac12\ln\frac1{1-\eta}.
+\]
+Since $\pi_\pm\ge\frac14\mu^+$, the same sum under $\mu^+$ is at most
+$2\ln\frac1{1-\eta}$. By Markov's inequality, the expected number of rounds in
+which $|q_{s_\pm}-q_{\pi_\pm}|\ge\gamma/5$ for at least one of the two signs is
+at most
+\[
+\frac{100}{\gamma^2}\ln\frac1{1-\eta}\le\frac{200\eta}{\gamma^2}
+=200\eta\cdot1024N\le\frac{25}{128}N .
+\]
+On a good round where neither forecast moved by $\gamma/5$, we have
+$q_{s_-}(1|h)<\frac12<q_{s_+}(1|h)$, so $\Lambda_{s_-}(h)=0$ and
+$\Lambda_{s_+}(h)=1$. The expected number of such rounds is at least
+$(\frac34-\frac{25}{128})N=\frac{71}{128}N>\nobreak\frac N2$.
+
+\emph{Step 3 (no negative steps).} For $|h|<N$,
+\[
+[s_+(h1)-s_+(h0)]-[s_-(h1)-s_-(h0)]=(1-\eta)\gamma\bigl(\mu^+(h)+\mu^-(h)\bigr)>0;
+\]
+the term $\eta A$ cancels. So $\Lambda_{s_-}(h)=1$ implies
+$s_+(h1)>s_+(h0)$ and $\Lambda_{s_+}(h)=1$. The decisions differ only as
+$(\Lambda_{s_-},\Lambda_{s_+})=(0,1)$, and such a round adds exactly $2\gamma$
+to the expected loss difference under $\mu^+$; all other rounds add $0$. With
+Step 2, $L_N^{s_-}-L_N^{s_+}\ge2\gamma\cdot\frac N2=\frac{k}{32}$, and
+$L_N^{s_-}-L_N^{s_+}\le2\gamma N=\frac k{16}$.
+\end{proof}
+
+\begin{remark}
+The proof of Theorem~\ref{thm:robust} does not use the tie rule: Step 3 gives
+$s_+(h1)>s_+(h0)$ strictly whenever $s_-(h1)\ge s_-(h0)$, and in Step 2 a tie
+of $s_\pm$ also needs a forecast change of at least $\gamma/5$. The formal
+statement fixes ties toward 1. The bound holds for every background $A$, with
+no rate of convergence for $A$. Theorems~\ref{thm:aggregate},
+\ref{thm:mixture}, \ref{thm:complexity}, \ref{thm:exact} and~\ref{thm:measures} take their decisions from
+Theorem~\ref{thm:robust} (outside the experiments both actions have risk
+$\frac12$), so they also hold for every fixed tie rule; their formal
+statements fix ties toward 1.
+\end{remark}
+
+\subsection{Aggregation over a universal background}\label{sec:33aggregate}
+
+Next we put infinitely many experiments behind a selector and make two
+semimeasures copy the background's mass on each selector. Then the relative
+weight of the background is exactly $\eta$ in every branch, however small the
+branch's mass is.
+
+\paragraph{The source.}
+For $j\ge0$ let $z_j=1^j0$, $p_j=2^{-j-1}$, $N_j=16^j$ and $\gamma_j=1/(32\cdot4^j)$,
+and let $\mu^\pm_{N_j}$ be the measures of
+Theorem~\ref{thm:robust} with $k=4^j$. The source $\mu$ produces fair bits
+until the first $0$; if this $0$ follows $j$ ones, it produces $N_j$ bits with
+$\mu(1|\cdot)=\frac12+\gamma_j$, and then fair bits forever. Every string is
+either $1^k$ or $z_jh$ for unique $j,h$, and
+\[
+\mu(1^k)=2^{-k},\qquad \mu(z_jh)=p_j\,\mu^+_{N_j}(h).
+\]
+All conditionals of $\mu$ are rational and computable from the history.
+
+\paragraph{The copies.}
+For a semimeasure $M$ define
+\[
+M^\pm(1^k)=M(1^k),\qquad M^\pm(z_jh)=M(z_j)\,\mu^\pm_{N_j}(h).
+\]
+$M^+$ is a semimeasure: at $1^k$,
+$M^+(1^k0)+M^+(1^{k+1})=M(z_k)+M(1^{k+1})\le M(1^k)$, and inside a branch the
+equality comes from $\mu^+_{N_j}$. The same holds for $M^-$. Let $\eta=2^{-20}$ and
+\[
+\xi_-=(1-\eta)\bigl(\tfrac14M^{+}+\tfrac34M^{-}\bigr)+\eta M,\qquad
+\xi_+=(1-\eta)\bigl(\tfrac34M^{+}+\tfrac14M^{-}\bigr)+\eta M .
+\]
+
+\begin{theorem}[aggregation]\label{thm:aggregate}
+Let $M$ be a semimeasure with $M(x)>0$ for all $x$. Then $\xi_\pm$ are
+semimeasures with $\xi_\pm\ge\eta M$, and with 0-1 loss, ties toward 1 and
+losses under the source $\mu$, for every $n\ge2$,
+\[
+\frac{n^{1/4}}{256}\le L_n^{\xi_-}-L_n^{\xi_+}\le\frac{n^{1/4}}8 .
+\]
+No computability of $M$ is needed.
+\end{theorem}
+
+\begin{proof}
+The semimeasure property and $\xi_\pm\ge\eta M$ are clear. Consider a round $t$
+with history $g$, $|g|=t-1$.
+If $g=1^k$, or $g=z_jh$ with $|h|\ge N_j$, then $\mu(1|g)=\frac12$, so both
+predictors have risk $\frac12$ and the round adds nothing.
+If $g=z_jh$ with $|h|<N_j$, then, since $M^\pm(z_j)=M(z_j)>0$,
+\[
+\frac{\xi_\pm(z_jhb)}{M(z_j)}=(1-\eta)\pi^\pm_j(hb)+\eta A_j(hb),\qquad
+A_j(y):=\frac{M(z_jy)}{M(z_j)},
+\]
+where $\pi^\pm_j$ are the cores of Theorem~\ref{thm:robust} with $k=4^j$, and
+$A_j$ is a semimeasure with $A_j(\eps)=1$. Bayes actions are scale invariant,
+so $\Lambda_{\xi_\pm}(z_jh)=\Lambda_{s^\pm_j}(h)$ with $s^\pm_j$ as in
+Theorem~\ref{thm:robust} for $A=A_j$. Also $\mu(z_jh)=p_j\mu^+_{N_j}(h)$ and
+$\mu(\cdot|z_jh)=\mu^+_{N_j}(\cdot|h)$. Let $D_j(m)$ be the loss difference of
+Theorem~\ref{thm:robust} (with $k=4^j$, $A=A_j$) over its first $m$ rounds.
+By the theorem, $D_j$ is nondecreasing, $D_j(N_j)\ge4^j/32$, and
+$D_j(m)\le2\gamma_jm$. A round $t\le n$ has history $z_jh$ with $|h|<N_j$ for
+exactly ${m_j(n):=\min\{N_j,(n-j-1)_+\}}$ values of $t$, so
+\[
+\Delta_n:=L_n^{\xi_-}-L_n^{\xi_+}=\sum_{j\ge0}p_jD_j(m_j(n)).
+\]
+\emph{Lower bound.} Let $J$ be the largest integer with $2\cdot16^J\le n$
+(so $J\ge0$). For $j\le J$, $j+1+16^j\le2\cdot16^j\le n$, so branch $j$ is
+complete and contributes at least $p_j\,4^j/32=2^j/64$. Hence
+$\Delta_n\ge(2^{J+1}-1)/64\ge2^J/64$. From $n<2\cdot16^{J+1}$ we get
+$2^J>n^{1/4}/(2\cdot2^{1/4})$, so $\Delta_n\ge n^{1/4}/(128\cdot2^{1/4})\ge n^{1/4}/256$.
+
+\emph{Upper bound.}
+$\Delta_n\le\sum_jp_j2\gamma_j\min(16^j,n)=\frac1{32}\sum_j8^{-j}\min(16^j,n)$.
+With $J_0=\lfloor\log_{16}n\rfloor$, the terms $j\le J_0$ sum to at most
+$2^{J_0+1}\le2n^{1/4}$ and the terms $j>J_0$ to at most
+$\frac87n\,8^{-J_0-1}\le\frac87n^{1/4}$. So
+$\Delta_n\le\frac{22}{7\cdot32}n^{1/4}<\frac18n^{1/4}$.
+\end{proof}
+
+Each path selects one finite experiment, so for this pair the
+\emph{realized} difference of error counts is eventually constant on every
+path. The expected difference diverges because the experiment lengths have a
+heavy tail. Problem 3.3 asks about expected losses.
+
+\subsection{Two Bayes mixtures over all lower semicomputable semimeasures}
+
+\begin{theorem}[main theorem for Problem 3.3]\label{thm:mixture}
+Let $\nu_0,\nu_1,\dots$ be a uniformly lower semicomputable enumeration, with
+repetitions, of all lower semicomputable semimeasures with $\nu(\eps)=1$.
+There are weights $w^-,w^+$ with $w^\pm_i>0$, $\sum_iw^\pm_i=1$ and
+$\frac13\le w^-_i/w^+_i\le3$ for all $i$, such that both mixtures
+$\xi_\pm=\sum_iw^\pm_i\nu_i$ are lower semicomputable semimeasures, and an
+index $i_0$ such that $\nu_{i_0}=\mu$ is a computable probability measure with
+rational conditionals. For binary 0-1 loss, with ties broken toward 1,
+\[
+L_n^{\xi_-}-L_n^{\xi_+}\ge\frac{n^{1/4}}{256}\quad\text{for all }n\ge2,
+\]
+and the difference tends to $+\infty$. Both mixtures are universal (paper step).
+\end{theorem}
+
+\begin{proof}
+Let $M=\sum_i2^{-(i+1)}\nu_i$. It is an lsc semimeasure with $M(\eps)=1$; it
+dominates every $\nu_i$, hence (Lemma~\ref{lem:root}) every member of $\cM$;
+and $M>0$ because $\lambda$ is some $\nu_i$. Build $\mu,M^+,M^-$ from this $M$ as
+above. The order of the construction is: the enumeration, then $M$, then $M^+$
+and $M^-$, then the weights; $M$ does not depend on the weights.
+
+$M^\pm$ are lower semicomputable: $M^\pm(x)=c_\pm(x)\,M(\sigma(x))$, where
+$\sigma(x)$ is the prefix $1^k$ or $z_j$ of $x$ and $c_\pm(x)\in\mathbb Q$ is
+computable ($c_\pm(1^k)=1$, $c_\pm(z_jh)=\mu^\pm_{N_j}(h)$). Also $M^\pm(\eps)=M(\eps)=1$.
+So $M^\pm\in\cMone$. Also $M^+\neq M^-$, because
+$M^+(z_01)=M(z_0)(\frac12+\gamma_0)\neq M(z_0)(\frac12-\gamma_0)=M^-(z_01)$ and
+$M(z_0)>0$. So there are indices $i_+\neq i_-$ with $\nu_{i_+}=M^+$, $\nu_{i_-}=M^-$.
+Put
+\begin{gather*}
+w^-_i=\eta2^{-(i+1)}+(1-\eta)\bigl(\tfrac14\ind\{i=i_+\}+\tfrac34\ind\{i=i_-\}\bigr),\\
+w^+_i=\eta2^{-(i+1)}+(1-\eta)\bigl(\tfrac34\ind\{i=i_+\}+\tfrac14\ind\{i=i_-\}\bigr).
+\end{gather*}
+All weights are positive and each family sums to $\eta+(1-\eta)=1$. Each of the
+three summands of $w^-_i$ is between $\frac13$ and $3$ times the matching summand
+of $w^+_i$, so the same holds for $w^-_i/w^+_i$. By construction
+$\sum_iw^\pm_i\nu_i$ equals $\xi_\pm$ of Theorem~\ref{thm:aggregate}, so it is
+an lsc semimeasure, it dominates $\eta M$ and is therefore universal, and the
+loss bound holds. The source $\mu$ is a computable measure, hence in $\cMone$,
+so $\mu=\nu_{i_0}$ for some $i_0$, and $w^\pm_{i_0}>0$.
+\end{proof}
+
+\begin{remark}[the book's class $\cM_U$]\label{rem:MU}
+The proof uses only three facts about the enumeration: it is uniformly lsc, it
+contains $M^+$, $M^-$, $\mu$ and $\lambda$, and Theorem~\ref{thm:aggregate}
+accepts any positive background. So the same proof works for any uniformly lsc
+enumeration of the book's class $\cM_U$ of all lsc semimeasures with
+$\nu(\eps)\le1$: then $\xi_\pm$ are Bayes mixtures over $\cM_U$ in the sense
+of eq.~(3.5) of the book, with positive weights, and $\mu\in\cM_U$. The formal
+proof uses the enumeration of $\cMone$ in~\cite{milovanovlean}.
+\end{remark}
+
+\begin{remark}[what is not claimed]
+The weights of Theorem~\ref{thm:mixture} are computable: they are rational,
+and they differ from the computable sequence $\eta2^{-(i+1)}$ only at the two
+fixed indices $i_+$ and $i_-$ (a paper observation; the formal statement does not
+include it). Theorem~\ref{thm:mixture} does not say that the weights are of
+the form $2^{-K(\nu)}$, or that $\xi_\pm$ are Solomonoff priors $M_U$ of
+universal monotone machines. Weights within constant factors of $2^{-K(i)}$
+are the subject of Theorem~\ref{thm:complexity}, and exact weights
+$2^{-K_C(i)}$ that of Theorem~\ref{thm:exact}. Theorem~\ref{thm:mixture}
+also says nothing about the specific product source of
+Theorem~\ref{thm:warmup} inside a universal mixture.
+\end{remark}
+
+\subsection{Complexity weights $2^{-K(i)}$}
+
+The book's universal prior uses weights $w_\nu=2^{-K(\nu)}$, with
+$K(\nu_i):=K(i)$ for the enumeration index~\cite[pp.~48, 67]{hutter2005uai}.
+
+\begin{theorem}[complexity priors]\label{thm:complexity}
+Fix an optimal prefix machine and the enumeration $(\nu_i)$ of
+Theorem~\ref{thm:mixture}. There are weights $w^-,w^+$ and constants
+$0<c\le C<\infty$ (depending on the machine) with
+$c\,2^{-K(i)}\le w^\pm_i\le C\,2^{-K(i)}$, where $K(i)$ is the prefix
+complexity of the index $i$, with $\sum_iw^\pm_i\le1$ and
+$w^-_i/w^+_i\in[\frac13,3]$, such that both mixtures
+$\xi^K_\pm=\sum_iw^\pm_i\nu_i$ are lower semicomputable semimeasures, and an index
+$i_0$ with $\nu_{i_0}=\mu$ a computable probability measure. For binary 0-1 loss,
+ties toward 1,
+\[
+L_n^{\xi^K_-}-L_n^{\xi^K_+}\ge\frac{n^{1/4}}{256}\quad\text{for all }n\ge2,
+\]
+and the difference tends to $+\infty$. Both mixtures are universal (paper step).
+\end{theorem}
+
+\begin{proof}
+Let $M_K=\sum_i2^{-K(i)}\nu_i$. It is an lsc semimeasure (since $2^{-K(i)}$
+is lsc and $\sum_i2^{-K(i)}\le1$ by~\eqref{eq:kraft}), it is positive, and it
+has $M_K(\eps)<1$ in general. Build $M_K^\pm$ from $M_K$ as $M^\pm$ was built from $M$. Their roots are
+$M_K(\eps)$, so we use the lifts $(M_K^\pm)^\uparrow\in\cMone$ of
+Lemma~\ref{lem:root}. As in the proof of Theorem~\ref{thm:mixture},
+$(M_K^+)^\uparrow(z_01)\neq(M_K^-)^\uparrow(z_01)$ because $M_K(z_0)>0$, so they have
+indices $i_+\neq i_-$. Put
+\[
+w^\pm_i=\eta2^{-K(i)}+(1-\eta)\bigl(a_\pm\ind\{i=i_+\}+b_\pm\ind\{i=i_-\}\bigr),
+\quad (a_-,b_-)=(\tfrac14,\tfrac34),\ (a_+,b_+)=(\tfrac34,\tfrac14).
+\]
+Then $w^\pm_i\ge\eta2^{-K(i)}$, so $c=\eta$ works; $w^\pm_i=\eta2^{-K(i)}$ for
+$i\notin\{i_+,i_-\}$ and $w^\pm_i\le\eta2^{-K(i)}+1$ for $i\in\{i_+,i_-\}$, so
+$C=\eta+\max(2^{K(i_+)},2^{K(i_-)})$ works; $\sum_iw^\pm_i\le\eta+(1-\eta)=1$; and the
+ratio bound holds term by term. The mixture is
+$\xi^K_\pm=\sum_iw^\pm_i\nu_i=\eta M_K+(1-\eta)(a_\pm(M_K^+)^\uparrow+b_\pm(M_K^-)^\uparrow)$. It is
+an lsc semimeasure: its root value is $\eta M_K(\eps)+(1-\eta)\le1$, and
+$\xi^K_\pm(0)+\xi^K_\pm(1)\le\eta M_K(\eps)+(1-\eta)M_K(\eps)\le\eta M_K(\eps)+(1-\eta)=\xi^K_\pm(\eps)$
+because $M_K(\eps)\le1$; at other strings the inequality holds termwise. It
+agrees on every nonempty string with the $\xi_\pm$ of
+Theorem~\ref{thm:aggregate} built from the positive background $M_K$. The
+losses read only nonempty strings, so Theorem~\ref{thm:aggregate} gives the
+bound. Universality follows from $\xi^K_\pm\ge\eta2^{-K(i)}\nu_i$ for every $i$
+and Lemma~\ref{lem:root}.
+\end{proof}
+
+The weights here are per index. We do not claim
+$w_\nu\le C\,2^{-K(\nu)}$ for the total weight of one semimeasure that occurs
+at several indices, or $\sum_iw_i=1$.
+
+In the book, the universal prior has the exact weights $2^{-K(i)}$, and $K$
+is defined relative to a choice of optimal prefix machine. The next theorem
+keeps these exact weights and changes only the reference machine. For a prefix
+machine $C$ and an enumeration $(\tau_i)$, let
+\[
+\xi_C:=\sum_i2^{-K_C(i)}\,\tau_i ,
+\]
+where $K_C(i)$ is the prefix complexity of the index $i$ relative to $C$.
+
+\begin{theorem}[exact complexity weights]\label{thm:exact}
+There are a uniformly lower semicomputable enumeration
+$\tau_0,\tau_1,\dots$, with repetitions, of all lower semicomputable
+semimeasures with $\nu(\eps)=1$, and two optimal prefix machines $C_-$, $C_+$,
+with these properties. The enumeration is a computable renumbering of the
+enumeration $(\nu_i)$ of Theorem~\ref{thm:mixture} in both directions: there
+are computable $f,g$ with $\tau_{f(i)}=\nu_i$ and $\nu_{g(i)}=\tau_i$ for all
+$i$. The mixtures $\xi_{C_-}$ and $\xi_{C_+}$ are universal lower
+semicomputable semimeasures, and
+$\frac14\le2^{-K_{C_-}(i)}/2^{-K_{C_+}(i)}\le4$ for all $i$. The source $\mu$
+of Section~\ref{sec:33aggregate} is some $\tau_j$, and for binary 0-1 loss,
+with ties broken toward 1,
+\[
+L_n^{\xi_{C_-}}-L_n^{\xi_{C_+}}\ge\frac{n^{1/4}}{256}\quad\text{for all }n\ge2,
+\]
+and the difference tends to $+\infty$. (Formal version: for the library
+enumeration as $(\nu_i)$, with the weaker bound $n^{1/4}/512$ for $n\ge3$.)
+\end{theorem}
+
+\begin{proof}
+Fix an optimal prefix machine $U_0$. The order of the construction is: the
+background $M_0$, then the enumeration $\tau$, then the machines $C_\pm$.
+
+\emph{The background.} Let
+$R=\sum_i2^{-30-K_{U_0}(i+4)}\nu_i$ and $M_0=(2^{21}-2)R$. Since
+$2^{-K_{U_0}(i)}$ is lsc and $\sum_i2^{-K_{U_0}(i)}\le1$
+by~\eqref{eq:kraft}, $M_0$ is an lsc semimeasure with
+$M_0(\eps)\le2^{21-30}<1$; it is positive because $\lambda$ is some $\nu_i$.
+
+\emph{The enumeration.} Build the copies $M_0^\pm$ of
+Section~\ref{sec:33aggregate} and let $\theta_\pm=(M_0^\pm)^\uparrow\in\cMone$
+(Lemma~\ref{lem:root}). Put
+\[
+\tau_0=\tau_1=\theta_+,\qquad \tau_2=\tau_3=\theta_-,\qquad \tau_{i+4}=\nu_i .
+\]
+This family is uniformly lsc and contains every $\nu_i$. Take $f(i)=i+4$, and
+let $g$ send $0,1$ and $2,3$ to fixed indices of $\theta_+$ and $\theta_-$ in
+$(\nu_i)$, and $i+4$ to $i$. The source is $\mu=\nu_{i_0}=\tau_{i_0+4}$.
+
+\emph{The machines.} On every condition $y$, $C_-$ maps the four programs
+$0000$, $0001$, $01$, $001$ to the indices $0,1,2,3$, and $C_+$ maps
+$01$, $001$, $0000$, $0001$ to them. On the programs $1^{30}p$ both machines
+compute $U_0(p|y)$. They have no other programs. The four short programs form a prefix-free set, they start with $0$, and the
+programs of $U_0$ form a prefix-free set, so the domain is prefix-free, and
+$K_{C_\pm}(x|y)\le K_{U_0}(x|y)+30$, so $C_\pm$ are optimal. The only
+programs of length less than $30$ are the four short ones, and a program
+$1^{30}p$ outputs $i$ only if $U_0(p)=i$. So $K_{C_-}(i)$ is $4,4,2,3$ and
+$K_{C_+}(i)$ is $2,3,4,4$ for $i=0,1,2,3$, and
+$K_{C_\pm}(i)=30+K_{U_0}(i)$ for $i\ge4$. The weight ratios are
+$\frac14,\frac12,4,2$ at $i=0,1,2,3$ and $1$ for $i\ge4$. With these weights
+\[
+\xi_{C_-}=\tfrac18\theta_++\tfrac38\theta_-+R,\qquad
+\xi_{C_+}=\tfrac38\theta_++\tfrac18\theta_-+R .
+\]
+
+\emph{The mixtures.} Each $\tau_i$ is a semimeasure and
+$\sum_i2^{-K_{C_\pm}(i)}\le1$, so $\xi_{C_\pm}$ are semimeasures; they are
+lsc because $i\mapsto2^{-K_{C_\pm}(i)}$ is lsc and $\tau$ is uniformly lsc.
+They are universal, since $\xi_{C_\pm}\ge2^{-K_{C_\pm}(i)}\tau_i$ for every
+$i$ and the $\tau_i$ include all of $\cMone$ (Lemma~\ref{lem:root}).
+
+\emph{The loss.} Let $\eta=2^{-20}$, so $(2^{21}-2)/2^{20}=2(1-\eta)$ and
+$\eta M_0=2(1-\eta)R$. On nonempty strings $\theta_\pm=M_0^\pm$, so there
+\[
+2(1-\eta)\,\xi_{C_-}=(1-\eta)\bigl(\tfrac14M_0^++\tfrac34M_0^-\bigr)+\eta M_0,
+\]
+which is the $\xi_-$ of Theorem~\ref{thm:aggregate} for the positive
+background $M=M_0$; in the same way $2(1-\eta)\,\xi_{C_+}$ is its $\xi_+$.
+Bayes actions read only nonempty strings and do not change under a positive
+factor. So the losses are those of Theorem~\ref{thm:aggregate}, which gives
+the bound.
+\end{proof}
+
+The two copies of $\theta_+$ and of $\theta_-$ make the total weights
+$\frac18$ and $\frac38$ sums of powers of two with prefix-free codes, so the
+two foreground weights have the ratio $1:3$ of Theorem~\ref{thm:aggregate}.
+Any tag $1^L$ with $L\ge21$ works; the formal proof uses $L=30$. The theorem
+holds in the index convention $K(\nu_i):=K(i)$. It does not say that every
+pair of optimal machines gives a gap (with $C_-=C_+$ the difference is $0$),
+and it makes no claim for the enumeration $(\nu_i)$ itself: $\tau$ adds four
+entries in front of it. Semantic weights $2^{-K(\nu)}$ are the subject of
+Remark~\ref{rem:exactK}. Solomonoff's mixtures $M_U$ of universal monotone
+machines are not covered.
+
+\subsection{Two Bayes mixtures over a class of probability measures}\label{sec:33measures}
+
+In the book's Section~3.2.2, $\cM$ is a countable class of probability
+measures, $\mu\in\cM$, and $\xi=\sum_{\nu\in\cM}w_\nu\nu$ with $w_\nu>0$ and
+$\sum_\nu w_\nu=1$~\cite[p.~70, eq.~(3.5)]{hutter2005uai}. Problem~3.3 is
+stated in this setting. The classes of Theorems~\ref{thm:mixture},
+\ref{thm:complexity} and~\ref{thm:exact} contain semimeasures that are not measures. This
+subsection gives the answer for classes of probability measures, with priors
+$w^\pm\ge2^{-20}a$ built from any positive base prior $a$ on the class.
+
+\paragraph{The class.}
+For a function $r:\Bs\to\mathbb Q\cap[0,1]$ let $\nu_r$ be the probability
+measure with $\nu_r(1|x)=r(x)$: $\nu_r(\eps)=1$, $\nu_r(x1)=\nu_r(x)\,r(x)$
+and $\nu_r(x0)=\nu_r(x)(1-r(x))$. Let $\cCQ$ be the family $(\nu_r)_r$, where
+$r$ ranges over the total computable functions $\Bs\to\mathbb Q\cap[0,1]$. The
+family is indexed by $r$, so one measure can occur at several indices (two
+functions $r$ that differ only at $\nu_r$-null histories give the same
+measure). A prior on $\cCQ$ is a function $r\mapsto a_r$ on the indices, and
+$\cCQ$ is countable. The source $\mu$ of Section~\ref{sec:33aggregate} has total computable
+rational conditionals, so $\mu=\nu_{r_0}$ for some index $r_0$; the fair
+coin is $\lambda=\nu_{1/2}$.
+
+For an index $r$ let $r^\pm$ copy $r$ on the selector and run the branch
+experiment of the source and then fair bits:
+\[
+r^\pm(1^k)=r(1^k),\qquad
+r^\pm(z_jh)=\begin{cases}\frac12\pm\gamma_j,&|h|<N_j,\\[2pt] \frac12,&|h|\ge N_j.\end{cases}
+\]
+The functions $r^\pm$ are again total, computable and rational, and
+$\nu_{r^\pm}(1^k)=\nu_r(1^k)$, $\nu_{r^\pm}(z_jh)=\nu_r(z_j)\,\mu^\pm_{N_j}(h)$. So
+$\nu_{r^\pm}=(\nu_r)^\pm$, the copies of Section~\ref{sec:33aggregate}.
+
+\begin{theorem}[mixtures over measures]\label{thm:measures}
+There is an index $r_0$ such that $\nu_{r_0}=\mu$ is the source of
+Section~\ref{sec:33aggregate}, with the following property. For every prior $a$ on $\cCQ$ with
+$a_r>0$ for all $r$ and $\sum_ra_r=1$, there are priors $w^-,w^+$ on $\cCQ$
+with
+\[
+w^\pm_r>0,\qquad \sum_rw^\pm_r=1,\qquad w^\pm_r\ge2^{-20}a_r,\qquad
+\tfrac13\le w^-_r/w^+_r\le3\quad\text{for all }r,
+\]
+such that for the Bayes mixtures $\xi_\pm=\sum_rw^\pm_r\nu_r$, binary 0-1 loss
+and ties toward 1,
+\[
+L_n^{\xi_-}-L_n^{\xi_+}\ge\frac{n^{1/4}}{256}\quad\text{for all }n\ge2,
+\]
+and the difference tends to $+\infty$. The source $\mu$ does not depend on
+$a$; the priors $w^\pm$ depend on $a$. We make no claim that $w^\pm$ or $\xi_\pm$
+are computable. The proof also gives the upper bound $n^{1/4}/8$. (Formal
+version: as stated; the upper bound is a paper step.)
+\end{theorem}
+
+\begin{proof}
+Let $M_a=\sum_ra_r\nu_r$. It is a probability measure, and
+$M_a\ge a_{1/2}\lambda>0$. For an index $r'$ put
+\[
+\tilde a^\pm_{r'}=\sum_{r:\,r^\pm=r'}a_r ,
+\]
+the prior mass of the fiber of $r'$ under $r\mapsto r^\pm$ (zero if the fiber is
+empty). The fibers can have more than one element, and the proof does not need
+them to be singletons. Summing over fibers gives
+$\sum_{r'}\tilde a^\pm_{r'}=\sum_ra_r=1$ and
+\[
+\sum_{r'}\tilde a^\pm_{r'}\nu_{r'}=\sum_ra_r\,\nu_{r^\pm}=\sum_ra_r(\nu_r)^\pm=M_a^\pm ,
+\]
+because $M\mapsto M^\pm$ is linear: $M^\pm(x)=c_\pm(x)\,M(\sigma(x))$ with
+$\sigma$ and $c_\pm$ as in the proof of Theorem~\ref{thm:mixture}. With
+$\eta=2^{-20}$ put
+\begin{gather*}
+w^-_r=\eta a_r+(1-\eta)\bigl(\tfrac14\tilde a^+_r+\tfrac34\tilde a^-_r\bigr),\\
+w^+_r=\eta a_r+(1-\eta)\bigl(\tfrac34\tilde a^+_r+\tfrac14\tilde a^-_r\bigr).
+\end{gather*}
+Then $w^\pm_r\ge\eta a_r>0$, each family sums to $\eta+(1-\eta)=1$, and the
+ratio bound holds term by term. By the display above,
+\[
+\xi_-=\eta M_a+(1-\eta)\bigl(\tfrac14M_a^++\tfrac34M_a^-\bigr),\qquad
+\xi_+=\eta M_a+(1-\eta)\bigl(\tfrac34M_a^++\tfrac14M_a^-\bigr),
+\]
+which are the $\xi_\pm$ of Theorem~\ref{thm:aggregate} for the positive
+background $M=M_a$. Theorem~\ref{thm:aggregate} gives the bound and the upper
+bound $n^{1/4}/8$. Finally $w^\pm_{r_0}\ge\eta a_{r_0}>0$.
+\end{proof}
+
+The construction transforms every component of the given prior. The copies
+keep the selector masses of each component, so the background has relative
+weight exactly $\eta$ in every branch. This matters because, with two fixed
+foreground models, a small global weight of the background could
+become a large weight after conditioning on a rare selector.
+
+\begin{remark}[indices and distinct measures]\label{rem:indices}
+The theorem also holds with $\cCQ$ read as a set of distinct measures (paper
+step; not formally verified). A positive prior on the distinct measures lifts to a positive prior on
+the indices: split the weight of each measure over its countably many indices
+with positive parts. Theorem~\ref{thm:measures} then gives $w^\pm$ on indices.
+Summing $w^\pm$ over the indices of each measure gives priors on the distinct
+measures; positivity, $\sum=1$, the lower bound $2^{-20}a$ and the ratio bound
+hold after the summation, and the mixtures $\xi_\pm$ do not change.
+\end{remark}
+
+\begin{corollary}[all computable probability measures]\label{cor:allmeasures}
+Let $\mathcal C$ be a countable set of probability measures that contains
+$\mu$ and $\lambda$, and with $\nu^+,\nu^-\in\mathcal C$ for every
+$\nu\in\mathcal C$. Then the conclusion of Theorem~\ref{thm:measures} holds
+for $\mathcal C$ in place of $\cCQ$, with sums over $\nu\in\mathcal C$, and
+also with the upper bound $n^{1/4}/8$. This applies to the countable set
+$\cCcomp$ of all computable probability measures, and to the set of computable probability
+measures with computable rational conditionals at histories of positive mass.
+(Paper step; not formally verified.)
+\end{corollary}
+
+\begin{proof}
+The proof of Theorem~\ref{thm:measures} uses only these properties of the
+class, with the fiber sums $\tilde a^\pm_\rho=\sum_{\nu:\,\nu^\pm=\rho}a_\nu$. The
+copies $\nu^\pm$ of a probability measure are probability measures: at $1^k$,
+$\nu^\pm(1^k0)+\nu^\pm(1^{k+1})=\nu(z_k)+\nu(1^{k+1})=\nu(1^k)$, and inside a
+branch the equality comes from $\mu^\pm_{N_j}$. If $\nu$ is computable, then
+$\nu^\pm(x)=c_\pm(x)\,\nu(\sigma(x))$ is computable, since $c_\pm$ is rational and
+computable. The same formula keeps rational conditionals at histories of
+positive mass. Both $\mu$ and $\lambda$ have rational conditionals.
+\end{proof}
+
+The proof also works with any $\eta\in(0,2^{-20}]$ in place of $2^{-20}$,
+because Theorem~\ref{thm:robust} accepts such $\eta$; then $w^\pm\ge\eta a$
+(paper step).
+
+\begin{remark}[semantic complexity weights; proof sketch; not formally verified]\label{rem:exactK}
+The book's universal prior gives a model $\nu$ the weight $2^{-K(\nu)}$. On a
+set of distinct measures, a natural reading of $K(\nu)$ is
+$K_V(\nu):=\min\{K_V(q):q\text{ computes }\nu\}$ for an optimal prefix machine
+$V$, and $K_{U_\pm}(\nu)$ is defined in the same way. This differs from the
+index convention $K(\nu_i):=K(i)$ of Theorems~\ref{thm:complexity}
+and~\ref{thm:exact}. In the index convention, Theorem~\ref{thm:exact} gives
+exact weights with a formal proof. The semantic statement below has only a
+proof sketch; we do not state it as a theorem. Let
+$\mu_*$ output one bit $1$ and then run the source $\mu$. For every optimal
+prefix machine $V$ there are two constructed optimal prefix machines $U_-$,
+$U_+$ such that the mixtures
+\[
+\Xi_\pm=\sum_{\nu\in\cCcomp}2^{-K_{U_\pm}(\nu)}\,\nu
+\]
+over the distinct computable probability measures satisfy
+$n^{1/4}/512\le L_n^{\Xi_-}-L_n^{\Xi_+}<n^{1/4}/8$ under $\mu_*$ for
+$n\ge3$. The weights are exactly $2^{-K_{U_\pm}(\nu)}$, without normalization;
+their ratios are in $\{\frac14,1,4\}$. Each machine reads one of three
+prefix-free headers and then simulates $V$. Two headers apply an injective
+transform of the model with a uniform inverse, which puts the experiment of
+Theorem~\ref{thm:robust} with core weights $\frac15,\frac45$ behind a selector;
+the third keeps the model unchanged behind a long header. The two machines
+assign the two short headers in opposite order. The exact table of shortest
+lengths needs a step that a transformed description is valid only if the
+original description is valid. This step (the representation of programs,
+validity, and the output convention) is only sketched. The core weights $\frac15,\frac45$ also need a variant of
+Theorem~\ref{thm:robust}. Its proof gives this variant with
+$\pi_\pm\ge\frac15\mu^+$ in Step~2, and more than $N/2$ good rounds remain.
+\end{remark}
+
+\subsection{Remarks}
+
+\paragraph{Consistency with the known part.}
+The book's bound $L_n^{\xi}-L_n^{\xi'}\le O\bigl((L_n^{\mu})^{1/2}\bigr)$ allows growth of
+order $\sqrt n$ here, since $L_n^\mu\approx n/2$. Our differences grow as
+$\log n$ (Theorem~\ref{thm:warmup}) and $n^{1/4}$
+(Theorem~\ref{thm:mixture}). Every $\xi_w$ with positive weights is Pareto
+optimal~\cite[Sec.~5.3]{hutter2003jmlr}; Pareto optimality compares a
+predictor across all environments of the class, so it allows an unbounded
+difference between two mixtures in one environment.
+
+\paragraph{Where the answer turns positive.}
+The negative answer uses a loss with a discrete decision, such as the 0-1
+loss, and a source whose conditionals approach the decision threshold. Three standard cases have a finite limit. Let $\xi,\xi'$ be
+Bayes mixtures of probability measures with $\mu$ in the class and weights
+$w_\mu,w'_\mu>0$, and let $p_t=\mu(1|x_{<t})$ and $q_t=\xi(1|x_{<t})$. The
+facts below are known~\cite[Ch.~3]{hutter2005uai},
+\cite{solomonoff1978,hutter2003tit}, \cite[p.~988]{hutter2003jmlr}; we use
+them only to mark the boundary of the negative answer.
+\begin{itemize}
+\item \emph{Log loss.} The expected cumulative log-loss difference is
+$D_n(\mu\Vert\xi)-D_n(\mu\Vert\xi')$, where
+\[
+D_n(\mu\Vert\xi)=\E_\mu\ln\frac{\mu(X_{1:n})}{\xi(X_{1:n})}
+\]
+is nondecreasing in
+$n$ and at most $\ln w_\mu^{-1}$. So the difference converges. If
+$w'_\nu/w_\nu\in[c,C]$ for all $\nu$, it stays in $[\ln c,\ln C]$.
+\item \emph{Quadratic loss.} The expected excess loss over the informed
+predictor at time $t$ is $\E_\mu(p_t-q_t)^2$, and the sum of these terms is at
+most $\frac12\ln w_\mu^{-1}$. So each regret converges, and so does the
+difference.
+\item \emph{A uniform margin.} Assume that there is $\delta>0$ such that
+$p_t=\frac12$ or $|2p_t-1|\ge\delta$ at every history of positive mass. A wrong
+0-1 decision costs $2d$, with $d=|p_t-\frac12|$, and needs $|p_t-q_t|\ge d$.
+So the 0-1 regret of $\Lambda_\xi$ is at most
+$\frac4\delta\sum_t\E_\mu(p_t-q_t)^2\le\frac2\delta\ln w_\mu^{-1}$, and the
+difference of two regrets converges.
+\end{itemize}
+Our source has margin $2\gamma_j\to0$ in branch $j$. Its experiment there has
+$N_j\gamma_j^2=1/1024$, so the data do not reveal the sign of the bias, and
+$N_j\gamma_j=4^j/32$, so the expected gain grows with $j$. The 0-1 loss is discontinuous at the decision boundary, which is
+where stability results for continuous losses~\cite{kadanechuang1978} do not
+apply. For related recent results on bounded prior ratios with squared and log
+loss see~\cite[Thm.~5]{liteng2026}, for a single decision flip
+see~\cite[Ex.~5]{suwandi2026}, and see also~\cite[Prop.~4]{dawidvovk2009}.
+
+%======================================================================
+\section{Problem 6.3: the conditional-complexity error bound fails}\label{sec:63}
+%======================================================================
+
+\subsection{Setting}
+
+In the book's Section~6.2, sequence prediction is posed as an agent problem:
+in cycle $k$ the agent guesses the next symbol, and the reward says whether the
+guess equals the true symbol $\dot z_k$. With a fixed rule for
+ties, the agent \AIxi{} is deterministic, and its whole action-reward history
+before cycle $k$ is a function of the true prefix $\dot z_{<k}$. So \AIxi{}
+induces a map $\Theta:\Bs\to\B$, where $\Theta(\dot z_{<k})$ is its guess in cycle $k$.
+We work with arbitrary maps of this kind.
+
+\begin{definition}
+A \emph{deterministic predictor} is any function $\Theta:\Bs\to\B$ (no
+computability is assumed). For $x,y\in\Bs$ its number of errors while it
+predicts $y$ after $x$ is
+\[
+E_\Theta(x,y)=\#\{1\le i\le|y|:\ \Theta(x\,y_{<i})\neq y_i\}.
+\]
+\end{definition}
+
+With $x=\dot z_{<k}$ and $y=\dot z_{k:n}$, $E_\Theta(x,y)$ is the error count
+$E_{k:n}$ of the book. The last question of Problem 6.3 asks, under this
+error-count reading, whether
+\begin{equation}\label{eq:63E}
+E_{k:n}\le C\,2^{K(\dot z_{k:n}|\dot z_{<k})}
+\end{equation}
+holds with a constant $C$ independent of $n$, $k$ and $\dot z$. (The book
+writes $\approx$, which we read as ``within a multiplicative constant''. If $C$
+may depend on $\dot z$, the book's bound~(6.17) already gives the answer.)
+
+\subsection{The counterexample}
+
+\begin{theorem}\label{thm:63E}
+Let $K(y|x)$ be ordinary conditional prefix complexity for an optimal prefix
+machine. There is a constant $b$ such that for every deterministic predictor
+$\Theta$ and every $d\in\N$ there are $x,y\in\Bs$ with
+\[
+K(y|x)\le b\qquad\text{and}\qquad E_\Theta(x,y)\ge d-1 .
+\]
+Consequently, for every deterministic predictor $\Theta$ there is no $C$ with
+$E_\Theta(x,y)\le C\,2^{K(y|x)}$ for all $x,y$. In particular, for \AIxi{} with any
+fixed tie rule, no $C$ independent of $n,k,\dot z$ satisfies~\eqref{eq:63E}.
+(Formal version: every deterministic predictor; the reduction from \AIxi{} to
+a deterministic predictor is a paper step.)
+\end{theorem}
+
+\begin{proof}
+For $m\ge1$ let $\mathrm{bin}(m)$ be the binary representation of $m$ without
+leading zeros. Define a computable $F:\Bs\to\Bs$ by $F(\eps)=\eps$ and, for
+$|x|=m\ge1$, with $\delta=|\mathrm{bin}(m)|$,
+\[
+F(x)=0^{2^\delta-m}\,\mathrm{bin}(m).
+\]
+Let $b=b_F$, so $K(F(x)|x)\le b$ for all $x$. The constant does not depend on
+$\Theta$ or $d$.
+
+Fix $\Theta$ and $d$. For $d\le1$ take $x=y=\eps$. For $d\ge2$ define a word
+$c=c_1\dots c_d$ by $c_1=1$ and $c_i=1-\Theta(0^{2^d}c_{<i})$ for $2\le i\le d$.
+Let $m$ be the number with $\mathrm{bin}(m)=c$; then $2^{d-1}\le m<2^d$ and
+$|\mathrm{bin}(m)|=d$. Put
+\[
+x=0^m,\qquad y=0^{2^d-m}c=F(x),\qquad xy=0^{2^d}c .
+\]
+Then $K(y|x)\le b$. The bits $c_2,\dots,c_d$ lie in $y$ (since $m<2^d$), and
+$\Theta$ guesses each of them wrongly by construction. So $E_\Theta(x,y)\ge d-1$.
+
+For the consequence, given $C$ choose $d$ with $d-1>C\,2^b$; then
+\[
+E_\Theta(x,y)\ge d-1>C\,2^{b}\ge C\,2^{K(y|x)}.\qedhere
+\]
+\end{proof}
+
+The proof does not use any property of $\Theta$, so the failure of~\eqref{eq:63E}
+is a property of $K(\cdot|x)$: the condition $x=0^m$ hands the program the
+number $m$, and the adversarial bits are stored in $m$. This is the length
+observation of Chernov and Hutter~\cite{chernovhutter2005}, in the journal
+version~\cite[Lemma~5]{chernovhutterschmidhuber2007}: for $x=0^\ell$ they have
+$K(\mu|x)=O(1)$ while the one-step log-loss deviation of $M$ is at least
+$K(\ell)\ln2$, and they remark after that lemma that $K(y|x)$ can use the length of
+the condition. Theorem~\ref{thm:63E} extends this mechanism from one deviation
+of $M$ to the error count of every deterministic predictor; we do not claim the
+mechanism as new.
+
+\begin{corollary}\label{cor:63rate}
+For every deterministic predictor, no bound
+$E_{k:n}\le C\,g(k)\,2^{K(\dot z_{k:n}|\dot z_{<k})}$ with $g(k)=o(\log k)$
+holds for all $n,k,\dot z$. (Paper step from Theorem~\ref{thm:63E}.)
+\end{corollary}
+
+\begin{proof}
+In the proof of Theorem~\ref{thm:63E}, $k=m+1\le2^d$, so $E_{k:n}\ge d-1\ge\log_2k-1$
+while~$K(y|x)\le\nobreak b$.
+\end{proof}
+
+A correction by the length of the condition is natural:
+Chernov, Hutter and Schmidhuber note that logarithmic corrections in the
+exponent become polynomial factors~\cite[p.~9]{chernovhutterschmidhuber2007}.
+
+\subsection{The second link of the chain, and what stays open}
+
+The ratio form of the question also fails at its second link.
+
+\begin{proposition}\label{prop:63R}
+Let $M$ be a universal semimeasure. There is $C_0$ with $K(1|0^\ell)\le C_0$
+for all $\ell$, and for every $r\in\N$ some $\ell$ has $2^r M(0^\ell1)<M(0^\ell)$.
+So no constant $C$ gives $M(x)/M(xy)\le C\,2^{K(y|x)}$ for all $x,y$.
+(Formal version: the universal semimeasure of the library~\cite{milovanovlean}.)
+\end{proposition}
+
+\begin{proof}
+$K(1|0^\ell)$ is bounded because the output is constant. The strings $0^\ell1$
+form a prefix-free set, so $\sum_\ell M(0^\ell1)\le1$ and $M(0^\ell1)\to0$.
+$M$ dominates the measure concentrated on $0^\infty$, so $M(0^\ell)\ge c>0$
+for all $\ell$. So for every $r$ some $\ell$ has $2^rM(0^\ell1)<c\le M(0^\ell)$.
+Given $C$, take $r$ with $2^r\ge C\,2^{C_0}$; then $x=0^\ell$, $y=1$ give
+$M(x)/M(xy)>2^r\ge C\,2^{K(y|x)}$.
+\end{proof}
+
+This is essentially the example of~\cite[Lemma~5]{chernovhutterschmidhuber2007}.
+It is also related to Problem~2.6(ii) of the book~\cite[p.~61]{hutter2005uai}.
+Let $\KM(x)=-\log_2M(x)$. In the book's notation, with $y$ the past and $x$ the
+continuation, Problem~2.6(ii) asks for the upper bound
+\[
+\KM(yx)-\KM(y)\le\tilde K(x|y)+K(\ell(y))+O(1),
+\]
+where $\ell(y)=|y|$, for a
+suitable variant $\tilde K$ of conditional complexity, and says that it is open whether an additive
+constant independent of $x$ and $y$ is sufficient. This question is settled in
+the literature. Hutter's prize page lists Problem~2.6 as solved by Chernov and
+Hutter~\cite{hutterprizepage,chernovhutter2005}. For the past $0^\ell$ and the
+continuation $1$, $\tilde K(1|0^\ell)=O(1)$ for every variant listed in
+Problem~2.6, the monotone $K_*$ included, while
+$\KM(0^\ell1)-\KM(0^\ell)\ge K(\ell)-O(1)$ by the proof
+of~\cite[Lemma~5]{chernovhutterschmidhuber2007}. So the additive-constant
+version of Problem~2.6(ii) fails, and the $K(\ell(y))$ term
+of~\cite[Thm.~1]{chernovhutterschmidhuber2007} is tight, as their Lemma~3 states
+for Problem~2.6(iii). Proposition~\ref{prop:63R} is a weaker, machine-checked
+form of this fact: it shows that the increase is unbounded, while their bound
+gives at least $K(\ell)$ for each $\ell$. We make no claim about Problem~2.6.
+
+Theorem~\ref{thm:63E} shows directly that no route gives
+$E_{k:n}\lesssim2^{K(\dot z_{k:n}|\dot z_{<k})}$, and
+Proposition~\ref{prop:63R} shows that the second link fails on its own. So the
+end of Hutter's chain is refuted.
+Two questions stay open:
+\begin{itemize}
+\item the first link for the active agent,
+$E_{k:n}^{\AI\xi}\le C\,\xi^{\SP}(\dot z_{<k})/\xi^{\SP}(\dot z_{1:n})$;
+\item the bound with Chernov and Hutter's complexity $K_*(y|x*)$, which is
+monotone in the condition~\cite{chernovhutterschmidhuber2007}. Our witnesses do
+not refute it, since $K_*(y|0^m*)$ is about $K(m)$.
+\end{itemize}
+Problem 3.13 asks which results remain valid when $K(\nu)$ is replaced by
+$K(\nu|x_{<k})$, and states that for $M=M_U$ the posterior weights do not
+satisfy $w_\nu(x_{<k})\geqx2^{-K(\nu|x_{<k})}$ \cite[p.~122]{hutter2005uai};
+see also~\cite[Sec.~5(h)]{hutter2009open}. Theorem~\ref{thm:63E} is a failure of
+posterization of the same kind, for error counts. For related work on
+conditional complexity see also~\cite{andreevposobinshen2017}.
+
+%======================================================================
+\section{Problem 2.7: the normalized universal predictor}\label{sec:27}
+%======================================================================
+
+\subsection{Setting and the known part}\label{sec:27setting}
+
+For a universal semimeasure $M$, the normalized predictor is
+\[
+q_M(b|x)=\frac{M(xb)}{M(x0)+M(x1)},
+\]
+which is the book's $\Mnorm(x_t|x_{<t})$ with $x=x_{<t}$. Let $Q_M$ be the
+probability measure with conditionals $q_M$. For a computable probability
+measure $\mu$ and $t\ge1$ define the expected one-step $L_1$ and squared errors
+\[
+A_t=\sum_{|x|=t-1}\sum_{b\in\B}\bigl|\mu(x)\,q_M(b|x)-\mu(xb)\bigr|,\qquad
+S_t=\sum_{|x|=t-1}\mu(x)\sum_{b\in\B}\bigl(q_M(b|x)-\mu(b|x)\bigr)^2,
+\]
+where $\mu$-null histories contribute $0$. For $\mu(x)>0$ let
+\[
+a_t(x)=\sum_{b\in\B}\bigl|q_M(b|x)-\mu(b|x)\bigr|,\qquad
+s_t(x)=\sum_{b\in\B}\bigl(q_M(b|x)-\mu(b|x)\bigr)^2 .
+\]
+So $A_t=\E_\mu a_t(X_{<t})$ and $S_t=\E_\mu s_t(X_{<t})$. For binary distributions the
+squared error is half the square of the $L_1$ error, and Jensen's inequality
+gives
+\begin{equation}\label{eq:AS}
+S_t\ge\tfrac12A_t^2 .
+\end{equation}
+Recall $\kappa_t=2^{-K(t)}$.
+
+For deterministic environments the answer to the first question is known.
+
+\begin{proposition}[known; Hutter 2007]\label{prop:27F}
+For every universal $M$ there is $c_M>0$ with $q_M(b|x)\ge c_M\,2^{-K(|x|+1)}$
+for all $x\in\Bs$ and $b\in\B$. In particular, along any sequence the
+normalized predictor gives probability at least $c_M2^{-K(t)}$ to the wrong
+bit at every time $t$. (Formal version: the universal semimeasure of the
+library~\cite{milovanovlean}.)
+\end{proposition}
+
+\begin{proof}
+For a Solomonoff prior $V$, Hutter~\cite[eq.~(17)]{hutter2007bayesconf} proves
+$2^{-K(n)}\leqx V(\bar x_n|x_{<n})$ for all $n$, all $x_{1:n}$ and
+$\bar x_n\neq x_n$; since $x_n$ is arbitrary, this covers every history and
+every next bit. $V$ and $M$ are both universal and both lsc, so each
+dominates the other: $aV\le M\le A'V$ for constants $a,A'>0$. Then
+$q_M(b|x)\ge M(xb)/M(x)\ge(a/A')\,V(xb)/V(x)$.
+\end{proof}
+
+For a computable sequence $z$ the wrong-bit probability is also
+$O(2^{-K(t)})$: the strings $z_{<t}\bar z_t$ form a c.e.\ prefix-free set, so
+$g(t)=M(z_{<t}\bar z_t)$ is lsc with $\sum_tg(t)\le1$, hence $g(t)\le C_g\kappa_t$
+by~\eqref{eq:coding}, while $M(z_{1:t})\ge u_z>0$; so
+$q_M(\bar z_t|z_{<t})\le g(t)/M(z_{1:t})\le(C_g/u_z)\kappa_t$. This two-sided rate of
+order $2^{-K(t)}$ is consistent with Leike and Hutter~\cite{leikehutter2015nicod}.
+The prize page states that a solution of part ``2.7u'' was written up in 2005;
+it is not public~\cite{hutterprizepage}. Hutter's open-problems
+paper~\cite{hutter2009open} restates the question for $\Mnorm$ and conjectures
+a positive answer. The rest of this section treats stochastic $\mu$.
+
+\subsection{Tools}
+
+\begin{lemma}[normalization keeps dominance]\label{lem:normdom}
+$Q_M(x)\ge M(x)/M(\eps)\ge M(x)$ for all $x$.
+\end{lemma}
+
+\begin{proof}
+\[
+Q_M(x)=\prod_{i=1}^{|x|}\frac{M(x_{\le i})}{M(x_{<i}0)+M(x_{<i}1)}
+\ge\prod_{i=1}^{|x|}\frac{M(x_{\le i})}{M(x_{<i})}=\frac{M(x)}{M(\eps)}.
+\qedhere
+\]
+\end{proof}
+
+The next lemma forces a discrepancy at prescribed times with arbitrary gaps
+between them.
+
+\begin{lemma}[selective forcing]\label{lem:forcing}
+Let $P$ and $Q$ be probability laws on $\B^N$ with conditionals $p,q$, with
+$q(b|x)>0$ everywhere. Let $F\subseteq\{1,\dots,N\}$ with $|F|=m$, and for
+each $t\in F$ and $|x|=t-1$ let $f_t(x)\in\B$ satisfy $p(f_t(x)|x)\le\rho<1$.
+Let $\nu$ be the law that follows $p$ at times outside $F$ and outputs $f_t(x)$
+at times $t\in F$. If $0<r\le1$ and $Q(z)\ge r\,\nu(z)$ for all $|z|=N$, then
+\[
+\sum_{t\in F}A_t(P,Q)\ge2(r-\rho^m),\qquad
+A_t(P,Q):=\E_P\sum_b|q(b|X_{<t})-p(b|X_{<t})| .
+\]
+\end{lemma}
+
+\begin{proof}
+Let $\widehat Q$ be the law with conditionals $q$ at times in $F$ and $p$ at
+other times, and let $E$ be the event that $X_t=f_t(X_{<t})$ for all $t\in F$.
+By successive conditioning, $P(E)\le\rho^m$.
+
+We show $\widehat Q(E)\ge r$. For a prefix $x$ let $h(x)$ be the
+$\widehat Q$-probability of $E$ given $x$. We prove by backward induction on
+$|x|$ that $h(x)\ge r\,\nu(x)/Q(x)$. This is trivial if $\nu(x)=0$. For
+$|x|=N$ and $\nu(x)>0$, $h(x)=1$ and the claim is the domination
+hypothesis. If $|x|+1\in F$ and $f=f_{|x|+1}(x)$, then $\nu(xf)=\nu(x)$,
+$Q(xf)=Q(x)q(f|x)$ and
+$h(x)=q(f|x)h(xf)\ge q(f|x)\,r\nu(x)/(Q(x)q(f|x))=\nobreak r\nu(x)/Q(x)$.
+If $|x|+1\notin F$, then $\nu(xb)=\nu(x)p(b|x)$ and $Q(xb)=Q(x)q(b|x)$, so
+\[
+h(x)=\sum_bp(b|x)h(xb)\ge r\frac{\nu(x)}{Q(x)}\sum_b\frac{p(b|x)^2}{q(b|x)}
+\ge r\frac{\nu(x)}{Q(x)}
+\]
+by~\eqref{eq:chi2}. At the root, $\widehat Q(E)=h(\eps)\ge r$.
+
+Hence $\|P-\widehat Q\|_1\ge2(\widehat Q(E)-P(E))\ge2(r-\rho^m)$. By the hybrid
+inequality~\eqref{eq:hybrid} with the conditionals of $\widehat Q$, which equal
+those of $P$ outside $F$, $\|P-\widehat Q\|_1\le\sum_{t\in F}A_t(P,Q)$.
+\end{proof}
+
+\begin{lemma}[changing the environment]\label{lem:envchange}
+Fix $q$. For probability laws $P,R$ and
+\begin{gather*}
+A_t(P,Q)=\sum_{|x|=t-1}\sum_b|P(x)q(b|x)-P(xb)|,\\
+|A_t(P,Q)-A_t(R,Q)|\le\|P_{t-1}-R_{t-1}\|_1+\|P_t-R_t\|_1,
+\end{gather*}
+where $P_t$ is the marginal on $\B^t$. If $R=(1-\delta)P+\delta L$ for a
+probability law $L$, the right side is at most $4\delta$.
+\end{lemma}
+
+\begin{proof}
+This $A_t(P,Q)$ is the one of Lemma~\ref{lem:forcing}: if $P(x)>0$ then, with
+$p(b|x)=P(xb)/P(x)$, $|P(x)q(b|x)-P(xb)|=P(x)\,|q(b|x)-p(b|x)|$, and $P$-null histories contribute
+$0$ to both. The present form needs no conditionals of $P$.
+Apply the triangle inequality termwise and use $\sum_bq(b|x)=1$. For the
+mixture, $\|P_t-R_t\|_1=\delta\|P_t-L_t\|_1\le2\delta$.
+\end{proof}
+
+\subsection{Lower bounds along computable selections}
+
+\begin{theorem}[selections]\label{thm:selection}
+Let $M$ be a universal semimeasure, $\mu$ a computable probability measure,
+and $d_1<d_2<\cdots$ a computable increasing sequence of times. Let
+$\ell_n=6\lceil\log_2(n+2)\rceil$, $B_0=0$, $B_n=\sum_{k=1}^n\ell_k$, and
+$F_n=\{d_j:B_{n-1}<j\le B_n\}$. There are $c>0$ and $n_0$ such that for every
+$n\ge n_0$ some $t\in F_n$ has
+\[
+A_t\ge c\,\kappa_t\qquad\text{and}\qquad S_t\ge\frac{c^2}2\,\kappa_t^2 .
+\]
+The constants depend on $M$, $\mu$, the machine defining $K$, and the
+sequence $d$. The formal version assumes that $\mu$ has rational conditionals
+given by a computable function.
+\end{theorem}
+
+\begin{proof}
+\emph{Alternatives.} Let $\tilde\mu_n=(1-2^{-n})\mu+2^{-n}\lambda$. These measures
+have full support, and their conditionals are computable uniformly in $n$,
+because a cylinder of length $k$ has $\tilde\mu_n$-mass at least $2^{-n-k}$. At each
+$t\in F_n$ and history $x$ of length $t-1$, one bit has $\tilde\mu_n$-conditional
+probability at most $\frac12$; a search over rational approximations finds a
+bit $f_t(x)$ with $\tilde\mu_n(f_t(x)|x)<\frac23$. Let $\tilde\nu_n$ follow $\tilde\mu_n$ outside
+$F_n$ and output $f_t(x)$ at $t\in F_n$. The family $(\tilde\nu_n)$ is uniformly
+computable.
+
+\emph{One domination constant.} $R=\sum_{n\ge1}\kappa_n\tilde\nu_n$ is an lsc
+semimeasure. By universality and Lemma~\ref{lem:normdom} there is $a\in(0,1]$
+with $Q_M\ge M\ge aR\ge a\,\kappa_n\tilde\nu_n$ for every $n$.
+
+\emph{Forcing.} Apply Lemma~\ref{lem:forcing} with $P=\tilde\mu_n$, $Q=Q_M$, $\nu=\tilde\nu_n$,
+$N=\max F_n$, $\rho=\frac23$, $m=\ell_n$ and $r=a\kappa_n$:
+$\sum_{t\in F_n}A_t(\tilde\mu_n,Q_M)\ge2a\kappa_n-2(2/3)^{\ell_n}$. By
+Lemma~\ref{lem:envchange},
+\[
+\sum_{t\in F_n}A_t\ge2a\kappa_n-2(2/3)^{\ell_n}-4\ell_n2^{-n}.
+\]
+Now $(2/3)^{\ell_n}\le(n+2)^{-6\log_2(3/2)}$ with $6\log_2(3/2)>3$, and
+$\kappa_n\ge c_0(n+1)^{-2}$ by~\eqref{eq:wlower}. So for $n\ge n_0$,
+$\sum_{t\in F_n}A_t\ge a\,\kappa_n$.
+
+\emph{Coding.} The sets $F_n$ are finite, pairwise disjoint and computable
+uniformly in $n$. So $g(n)=\sum_{t\in F_n}\kappa_t$ is lsc and
+$\sum_ng(n)\le\sum_t\kappa_t\le1$. By~\eqref{eq:coding},
+$\sum_{t\in F_n}\kappa_t\le C_g\,\kappa_n$. Hence
+$\sum_{t\in F_n}A_t\ge(a/C_g)\sum_{t\in F_n}\kappa_t$, and some $t\in F_n$ has
+$A_t\ge(a/C_g)\kappa_t$. Put $c=a/C_g$ and use~\eqref{eq:AS}.
+\end{proof}
+
+The constant $c$ depends on the selection. A union over all selections
+therefore does not give a bound at every large $t$.
+
+\begin{corollary}[logarithmic windows]\label{cor:window}
+For every universal $M$ and computable $\mu$ there are $c>0$, $C_1$ and $T$ such
+that every window $\{u,\dots,u+C_1(\lfloor\log_2(u+2)\rfloor+1)\}$ with $u\ge T$
+contains a time $t$ with $A_t\ge c\,\kappa_t$ and $S_t\ge\frac{c^2}2\kappa_t^2$. Hence
+there are $\Omega(N/\log N)$ such times up to $N$. (Formal version: the
+window statement, with rational conditionals; the count is a paper step.)
+\end{corollary}
+
+\begin{proof}
+Take $d_j=j$. If $B_{n-1}<u\le B_n$, the block $F_{n+1}$ lies in
+$[u,u+\ell_n+\ell_{n+1}]$, and $n\le u$, so
+$\ell_n+\ell_{n+1}=O(\log(u+2))$. The count follows from
+$B_n=O(n\log n)$.
+\end{proof}
+
+\begin{corollary}[dyadic blocks]\label{cor:dyadic}
+For every universal $M$ and computable $\mu$ there are $c>0$ and $n_0$ such that
+for every $n\ge n_0$ some $t\in(2^n,2^{n+1}]$ has $A_t\ge c\,\kappa_t$ and
+$S_t\ge\frac{c^2}2\kappa_t^2$. (Formal version: rational conditionals.)
+\end{corollary}
+
+\begin{proof}
+Apply Corollary~\ref{cor:window} with $u=2^n+1$. For large $n$,
+\[
+2^n+1+C_1(\lfloor\log_2(2^n+3)\rfloor+1)\le2^{n+1}.\qedhere
+\]
+\end{proof}
+
+The formal proof of Corollary~\ref{cor:dyadic} follows an earlier, direct
+route: in each dyadic block it compares $\mu$ with alternatives that follow
+$\mu$ for $2^n$ steps and then a computable path of small $\mu$-probability,
+and uses the hybrid inequality~\eqref{eq:hybrid} and Markov's inequality.
+
+\begin{corollary}[c.e.\ sets of times]\label{cor:ce}
+For every universal $M$, computable $\mu$ and infinite computably enumerable set
+$D$ of times, there is $c>0$ such that infinitely many $t\in D$ have
+$A_t\ge c\,\kappa_t$ and $S_t\ge\frac{c^2}2\kappa_t^2$. (Paper proof from
+Theorem~\ref{thm:selection}; not formalized.)
+\end{corollary}
+
+\begin{proof}
+An infinite c.e.\ set contains a computable increasing sequence: after $d_j$,
+wait for an enumerated element larger than $d_j$. Apply
+Theorem~\ref{thm:selection}.
+\end{proof}
+
+\subsection{No general upper bound by a power of $2^{-K(t)}$}
+
+The second question of Problem 2.7 asks for which sequences the error is
+$\eqx2^{-K(t)}$. For stochastic environments, an upper bound of this order does
+not hold for all universal $M$, even with any positive power.
+
+\begin{theorem}[spikes for the fair coin]\label{thm:spikes}
+Fix an optimal prefix machine defining $K$ and $\kappa_t=2^{-K(t)}$. For every
+universal semimeasure $V$ with $V(\eps)=1$ there is an lsc semimeasure $\tau$
+with $\tau(\eps)=1$ such that $M=\frac12V+\frac12\tau$ is universal and, for the
+fair coin $\mu=\lambda$,
+\[
+\forall\alpha>0\ \forall C\ \forall T\ \exists t\ge T:\qquad
+S_t>C\,\kappa_t^{\alpha}\quad\text{and}\quad A_t>C\,\kappa_t^{\alpha}.
+\]
+In particular, there is a universal $M$ whose fair-coin expected errors are not
+$O(2^{-\alpha K(t)})$ for any $\alpha>0$.
+\end{theorem}
+
+\begin{proof}
+\emph{Busy-beaver times.} Let
+$\beta(n)=\max(\{0\}\cup\{j:K(j)\le n\})$, with $K$ from the same machine as
+$\kappa$. It is finite, nondecreasing, unbounded and lsc. Let $t_n=\beta(n)+1$;
+then $K(t_n)>n$, so $\kappa_{t_n}<2^{-n}$. Let
+$\gamma_n=2^{-(2\lfloor\log_2n\rfloor+1)}$ for $n\ge1$; then
+$\sum_n\gamma_n=1$ and $\gamma_n\ge1/(2n^2)$.
+
+\emph{Stopping semimeasures.} For $L\ge0$ and $i\in\B$ let
+$\tau_{L,i}(x)=\lambda(x)$ if $|x|\le L$, or if $|x|=L+1$ and the last bit of $x$
+is $i$; and $\tau_{L,i}(x)=0$ otherwise. This is a semimeasure, and
+$\tau_{L,i}(x)$ is nondecreasing in $L$. So
+$\tau_i=\sum_n\gamma_n\tau_{\beta(n),i}$ is lsc, with $\tau_i(\eps)=1$. Let
+$M^{(i)}=\frac12V+\frac12\tau_i$; it is lsc, has root $1$, and is universal.
+
+\emph{The two predictors differ at the stopping times.} Fix $t$ and $|x|=t-1$.
+Let $W_t=\sum_{n:\beta(n)=t-1}\gamma_n$ and
+$h_t=\sum_{n:\beta(n)\ge t}\gamma_n+\frac12W_t$. Summing over $n$ by cases,
+$\tau_i(x0)+\tau_i(x1)=h_t\lambda(x)$ for both $i$, so the two normalizers agree:
+\[
+D_t(x):=M^{(i)}(x0)+M^{(i)}(x1)=\tfrac12\bigl(V(x0)+V(x1)+h_t\lambda(x)\bigr).
+\]
+Also $M^{(0)}(x0)-M^{(1)}(x0)=\frac12W_t\lambda(x0)$, so
+\[
+q_{M^{(0)}}(0|x)-q_{M^{(1)}}(0|x)=\frac{W_t\lambda(x)}{4D_t(x)} .
+\]
+Since $\sum_{|x|=t-1}D_t(x)\le1$, Cauchy--Schwarz gives
+$\E_\lambda[\lambda(X)/D_t(X)]=\sum_x\lambda(x)^2/D_t(x)\ge1$, and Jensen gives
+$\E_\lambda[(q_{M^{(0)}}-q_{M^{(1)}})^2]\ge W_t^2/16$. For the fair coin,
+$s_t(x)=2(q_M(0|x)-\frac12)^2$ with $s_t$ as in Section~\ref{sec:27setting}, and $2(u-\frac12)^2+2(v-\frac12)^2\ge(u-v)^2$.
+Hence
+\[
+S_t(M^{(0)})+S_t(M^{(1)})\ge\frac{W_t^2}{16}.
+\]
+\emph{Pigeonhole.} At $t=t_n$, $W_{t_n}\ge\gamma_n$. So for each $n$ some
+$i$ has $S_{t_n}(M^{(i)})\ge\gamma_n^2/32$, and one fixed $i$ does so for
+infinitely many $n$. Take $\tau=\tau_i$. Along these $n$, $t_n\to\infty$ and
+\[
+\frac{S_{t_n}}{\kappa_{t_n}^\alpha}\ge\frac{\gamma_n^2}{32}2^{\alpha n}\ge\frac{2^{\alpha n}}{128\,n^4}\to\infty .
+\]
+For the fair coin, $a_t(x)=2|q_M(0|x)-\frac12|\ge s_t(x)$, so $A_t\ge S_t$.
+\end{proof}
+
+\begin{remark}[Solomonoff priors]
+If $V$ is the Solomonoff prior of a universal monotone machine, then so is $M$:
+a machine reads one bit and then either simulates the machine of $V$ or samples
+from $\tau$. With universality by adjunction this is the definition of Wood,
+Sunehag and Hutter~\cite[Def.~2]{woodsunehaghutter2013}; see also their Lemma~13
+and Theorem~14. This step is a paper argument; Lean checks the statement for
+universal lsc semimeasures. Theorem~\ref{thm:spikes} is about one $M$; it does
+not say that every universal $M$ has such spikes.
+\end{remark}
+
+\subsection{What remains open}
+
+The first question in its strongest stochastic form is:
+\begin{equation}\label{eq:E}\tag{E}
+\forall M\ \forall\mu\ \exists c>0\ \exists T\ \forall t\ge T:\quad
+A_t\ge c\,\kappa_t\quad(\text{or } S_t\ge c\,\kappa_t^2),
+\end{equation}
+for universal $M$ and computable $\mu$. We do not know whether (E) holds,
+also for the fair coin and for Solomonoff priors. The results above restrict a
+counterexample.
+
+\begin{proposition}[quiet sets are immune]\label{prop:immune}
+Let $M$ be universal and $\mu$ computable. Call an infinite set $D$ of times
+\emph{quiet} if $A_t/\kappa_t\to0$ as $t\to\infty$ in $D$, or
+$S_t/\kappa_t^2\to0$ as $t\to\infty$ in $D$. Then a quiet set has no infinite
+c.e.\ subset. If \textup{(E)} fails for $M,\mu$, a quiet set exists. Moreover, with
+$c$, $C_1$ and $T$ from Corollary~\ref{cor:window}, every window
+$\{u,\dots,u+C_1(\lfloor\log_2(u+2)\rfloor+1)\}$ with $u\ge T$ contains a time
+$t$ with $A_t\ge c\,\kappa_t$ and $S_t\ge\frac{c^2}2\kappa_t^2$. So from some point on, a quiet set omits at
+least one time in each such window.
+\end{proposition}
+
+\begin{proof}
+An infinite c.e.\ subset of a quiet set $D$ would contain infinitely many $t$
+with $A_t\ge c\,\kappa_t$ and $S_t\ge\frac{c^2}2\kappa_t^2$ (Corollary~\ref{cor:ce}),
+contrary to $A_t/\kappa_t\to0$ or $S_t/\kappa_t^2\to0$ along $D$. If (E) fails, then
+$\liminf_tA_t/\kappa_t=0$ (or $\liminf_tS_t/\kappa_t^2=0$), which gives a quiet set.
+The last claim is Corollary~\ref{cor:window}.
+\end{proof}
+
+Two simpler obstacles are known to us. Exact symmetry, $A_t=0$ for the fair
+coin at infinitely many $t$, is impossible: it would force
+$Q_M(0^N)\to0$, while $Q_M(0^N)\ge M(0^N)\ge c>0$. So a counterexample needs
+small nonzero errors on a quiet set. And a summed bound does not help
+directly: if $M\ge c_\mu\mu$, then $\sum_tS_t\le\ln(1/c_\mu)$ by the standard KL
+argument~\cite{hutter2003tit}, which allows spikes as in
+Theorem~\ref{thm:spikes}.
+
+%======================================================================
+\section{Formal verification}\label{sec:formal}
+%======================================================================
+
+\paragraph{Toolchain.}
+Lean~4.35.0~\cite{lean4}, Mathlib at tag \texttt{v4.35.0}~\cite{mathlib2020},
+and \texttt{kolmogorov-complexity-lean}~\cite{milovanovlean} at commit
+\texttt{17c50e560c337a8a702f8850a711f80a56b3cf91}. A check script builds every
+file in the directory \path{HutterPrizes/} of the repository, fails on any
+\texttt{sorry} in these files, and prints the axioms of every theorem in
+Table~\ref{tab:lean}; it fails on any axiom other than \texttt{propext},
+\texttt{Classical.choice} and \texttt{Quot.sound}. Every theorem in
+Table~\ref{tab:lean} passes this check.
+The repository is at \repourl.
+
+\paragraph{Process.}
+For the results on universal mixtures (Theorems~\ref{thm:mixture},
+\ref{thm:complexity} and~\ref{thm:exact}), on mixtures over measures
+(Theorem~\ref{thm:measures}), Problem 6.3 (Theorem~\ref{thm:63E},
+Proposition~\ref{prop:63R}) and Problem 2.7 (Proposition~\ref{prop:27F},
+Theorem~\ref{thm:selection}, Corollaries~\ref{cor:window}
+and~\ref{cor:dyadic}, Theorem~\ref{thm:spikes}), a Lean statement was frozen
+before the proof was completed, with a note that lists its definitions, its
+quantifiers and the dependence of each constant. A fresh-context AI reviewer
+(Claude) compared each statement with the book's text and recorded the claim it
+accepts. Two targets were changed after their reviews: in one, a hypothesis
+that excluded valid selections was removed; the target of
+Theorem~\ref{thm:exact} gained the clauses that its reviewer asked for (the
+per-index weight ratio, universality, and the renumbering of the enumeration).
+The final statements, including those of Theorems~\ref{thm:complexity},
+\ref{thm:exact} and~\ref{thm:measures}, are identical to the frozen ones. Theorem~\ref{thm:warmup} was reviewed in the same way after its
+proof. Theorems~\ref{thm:robust} and~\ref{thm:aggregate} are intermediate
+results; we compared their statements with the paper proofs.
+
+\paragraph{Conventions in the formal statements.}
+Strings are \lean{List Bool}. Semimeasures take values in $[0,\infty]$; the
+library class \lean{IsLowerSemicomputableContinuousSemimeasure} is our $\cMone$
+(lsc, root mass exactly $1$). \lean{P33Effective.IsUniversal} means
+domination of every member of this class; by Lemma~\ref{lem:root} this is
+equivalent to the book's universality. $K(y|x)$ is \lean{KP U y x} and $K(t)$ is
+\lean{KPNat U t} for a machine \lean{U} with
+\lean{IsOptimalPrefixConditional U}. In Problem 2.7, the true $\mu$ is given by a
+computable \lean{r : List Bool -> Q} with $\mu(1|x)=r(x)$ (rational
+conditionals); the error sums \lean{expAbsErr} and \lean{expSqErr} are $A_t$
+and $S_t$. In Problem 3.3, the predictor breaks ties toward~1, except in
+\lean{MixtureCounterexample.counterexample}, which breaks them toward~0, and
+\lean{transport} identifies histories with strings. For
+Theorem~\ref{thm:measures}, \lean{RatMeasure} is the index set of $\cCQ$
+(computable \lean{r : List Bool -> Q} with values in $[0,1]$),
+\lean{measureMass} is $\nu_r$, and \lean{classMixture} applied to $w$ is
+$\sum_rw_r\nu_r$.
+The lemmas \lean{ratMeasure_countable} and \lean{exists_positive_prior} in the
+same file show that the index set is countable and has a positive prior, so
+the hypothesis on $a$ can be met.
+
+\begin{table}[p]
+\centering\small\setlength{\defaultaddspace}{0.4em}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.7cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{4.0cm}@{}}
+\toprule
+Paper & Lean name & Scope of the formal version \\
+\midrule
+Thm.~\ref{thm:warmup} & \lean{MixtureCounterexample.counterexample} & lower bound and unboundedness; upper bound by paper step; ties toward 0 \\
+\addlinespace
+Thm.~\ref{thm:robust} & \lean{RobustExperiment.theorem3} & as stated \\
+\addlinespace
+Thm.~\ref{thm:aggregate} & \lean{RobustExperiment.Theorem4.theorem4_statement}, \lean{RobustExperiment.Theorem4.xi_dominates}, \lean{RobustExperiment.Theorem4.xi_semimeasure} & as stated \\
+\addlinespace
+Thm.~\ref{thm:mixture} & \lean{P33Mixture.mixture_counterexample} & library enumeration of $\cMone$; universality by paper step \\
+\addlinespace
+Thm.~\ref{thm:aggregate} with a universal background & \lean{P33Effective.effective_counterexample}, \lean{P33Effective.loss_gap_tendsto_atTop} & two universal $\xi_\pm\in\cMone$; a different pair from Thm.~\ref{thm:mixture} \\
+\addlinespace
+Thm.~\ref{thm:complexity} & \lean{P33Complexity.complexity_counterexample} & library enumeration of $\cMone$; universality by paper step \\
+\addlinespace
+Thm.~\ref{thm:exact} & \lean{P33Exact.exact_counterexample} & $\tau$ renumbers the library enumeration; bound $n^{1/4}/512$, $n\ge3$ \\
+\addlinespace
+Thm.~\ref{thm:measures} & \lean{P33Measures.measure_class_counterexample} & class indexed by total computable rational $r$; $\eta=2^{-20}$; upper bound by paper step \\
+\addlinespace
+Known part of 3.3 (squared distance) & \lean{HutterPrizes.two_semimeasures_sum_sq_le} & calibration \\
+\addlinespace
+Thm.~\ref{thm:63E} & \lean{HutterPrizes.errorcount_complexity_bound_fails}, \lean{HutterPrizes.no_errorcount_complexity_bound} & every deterministic predictor $\Theta$; the reduction from \AIxi{} to $\Theta$ by paper step \\
+\addlinespace
+Prop.~\ref{prop:63R} & \lean{HutterPrizes.uniform_conditional_ratio_fails} & library's universal $M$ only \\
+\addlinespace
+Prop.~\ref{prop:27F} & \lean{HutterPrizes.normalized_lower_bound} & library's universal $M$ only \\
+\addlinespace
+Lemma~\ref{lem:forcing} & \lean{P27.selective_forcing}, \lean{P27.selective_forcing_bound} & finite form \\
+\addlinespace
+Thm.~\ref{thm:selection} & \lean{P27Selection.selection_lower_bound} & rational conditionals \\
+\addlinespace
+Cor.~\ref{cor:window} & \lean{P27Selection.log_window_lower_bound} & rational conditionals \\
+\addlinespace
+Cor.~\ref{cor:dyadic} & \lean{P27Stochastic.expected_lower_bound_io} (with \lean{P27.block_bound}, \lean{P27.block_bound_of_joint}, \lean{P27.hybrid_inequality}) & rational conditionals \\
+\addlinespace
+Thm.~\ref{thm:spikes} & \lean{P27Spikes.no_power_upper_bound_mix}, \lean{P27Spikes.no_power_upper_bound} & as stated; Solomonoff-prior remark by paper step \\
+\bottomrule
+\end{tabularx}
+\caption{Paper results and their Lean theorems.}
+\label{tab:lean}
+\end{table}
+
+\paragraph{What the formal proofs do not cover.}
+Lemma~\ref{lem:root} and Remark~\ref{rem:MU} (the passage from $\cMone$ to the
+book's class); the upper bound $H_n/16$ in Theorem~\ref{thm:warmup}; the
+universality of the mixtures in Theorems~\ref{thm:mixture}
+and~\ref{thm:complexity} (the formal statements give lower semicomputability
+and the weights; the separate formal result
+\lean{P33Effective.effective_counterexample} gives two universal
+semimeasures); the computability of the weights of Theorem~\ref{thm:mixture};
+the constant $1/256$ and the case $n=2$ in Theorem~\ref{thm:exact} (the
+formal bound is $n^{1/4}/512$ for $n\ge3$);
+the upper bound in Theorem~\ref{thm:measures}, Remark~\ref{rem:indices} (the
+passage from indices to distinct measures), Corollary~\ref{cor:allmeasures}
+(all computable probability measures) and other values of $\eta$;
+Remark~\ref{rem:exactK}, which has only a proof sketch; the known positive
+cases of Section~\ref{sec:33} (log loss, quadratic loss, a uniform margin);
+the reduction from \AIxi{} to a deterministic predictor in
+Theorem~\ref{thm:63E}; Propositions~\ref{prop:63R} and~\ref{prop:27F} for
+every universal $M$ (the formal statements are for the library's $M$);
+Theorem~\ref{thm:selection} and its
+corollaries for computable $\mu$ with irrational conditionals;
+the count in Corollary~\ref{cor:window}; Corollary~\ref{cor:ce} and Proposition~\ref{prop:immune}; Corollary~\ref{cor:63rate};
+and the Solomonoff-prior remark after Theorem~\ref{thm:spikes}.
+
+%======================================================================
+\section{Related work}\label{sec:related}
+%======================================================================
+
+\paragraph{Problem 3.3.}
+We found no earlier answer. The closest antecedents are the book's Section~3.6
+and Problem~3.6~\cite[pp.~98, 120]{hutter2005uai} and
+Hutter~\cite[p.~988]{hutter2003jmlr}: with $\cM=\{\mu_1,\mu_2\}$ and
+$\mu(1|x_{<t})=\frac12\pm\varepsilon_t$, the regret
+$E_n^{\Theta_\xi}-E_n^{\Theta_\mu}$ of one mixture diverges. They do not compare
+two mixtures. Theorem~\ref{thm:warmup} is in the same family; the selector
+construction of Theorems~\ref{thm:aggregate} and~\ref{thm:mixture}, which makes
+the gap survive a universal background, is new as far as we know, and so is
+its extension to mixtures over computable probability measures with
+priors $w^\pm\ge2^{-20}a$ built from any positive base prior $a$ (Theorem~\ref{thm:measures}),
+and to two universal mixtures with exact weights $2^{-K(i)}$ that differ only
+in the reference machine (Theorem~\ref{thm:exact}). The 2024
+book~\cite[Exercise~3.10]{hutterquarelcatt2024} keeps only the known part of
+Problem 3.3. Hutter's open-problems list~\cite{hutter2009open} does not list the
+two-mixture loss question. For universal mixtures and Solomonoff priors we use
+the class relations of Wood, Sunehag and Hutter~\cite{woodsunehaghutter2013}.
+Leike and Hutter~\cite{leikehutter2015bad} study bad universal priors in the
+agent setting; they exclude horizon~1.
+Lattimore and Hutter~\cite{lattimorehutter2015} show that convergence of
+universal mixtures can fail on individual Martin-L\"of random sequences.
+
+\paragraph{Problem 6.3.}
+The mechanism of Theorem~\ref{thm:63E} is due to Chernov and
+Hutter~\cite{chernovhutter2005,chernovhutterschmidhuber2007}; our contribution
+is the extension to error counts of every deterministic predictor and the
+resulting negative answer. Their results with the complexity $K_*$ and with a
+length correction remain the positive side of the problem.
+
+\paragraph{Problem 2.7.}
+Proposition~\ref{prop:27F} is known~\cite{hutter2007bayesconf}. Wood, Sunehag
+and Hutter~\cite[Lemma~15]{woodsunehaghutter2013} give the defect floor
+$2^{-K(t)}$ for Solomonoff priors. Leike and Hutter~\cite{leikehutter2015nicod}
+give the deterministic rate. Bauwens and Kuznetsov~\cite{bauwenskuznetsov2026}
+study $\Mnorm$ for all maximal lsc semimeasures at positions forced by a
+decidable tree, with pointwise upper bounds on sums of powers of errors on every
+branch and a lower bound on one constructed branch. Their setting has no
+stochastic $\mu$ and no expectations; where the settings overlap ($\mu$ on a
+decidable tree), their upper bound and our Corollary~\ref{cor:ce} are consistent, and
+neither implies the other. We did not find
+Theorems~\ref{thm:selection}--\ref{thm:spikes} in the literature. The prediction
+of selected bits by $\Mnorm$ (Problem 2.9) was solved by Lattimore, Hutter and
+Gavane~\cite{lattimorehuttergavane2011}.
+
+%======================================================================
+\section{Conclusion}
+%======================================================================
+
+Problem 3.3 and the last question of Problem 6.3 have negative answers.
+For Problem 3.3, the gap appears in the book's own setting of a countable
+class of computable probability measures, with priors built from any positive
+base prior and with bounded prior ratios. It also appears with full universal classes of
+semimeasures, and for two universal priors with the exact weights $2^{-K(i)}$
+for two constructed reference machines and one constructed enumeration. Solomonoff's mixtures $M_U$ of two
+universal monotone machines are not covered here. The gap is a property
+of the 0-1 loss near the decision boundary: for log loss, quadratic loss and
+sources with a uniform margin the difference is known to stay bounded. For Problem 2.7, the normalized predictor has expected errors of
+order $2^{-K(t)}$ infinitely often along every computable selection of times
+(with a constant that depends on the selection), and no
+upper bound by a power of $2^{-K(t)}$ holds for all universal priors. Three
+questions stay open: the every-large-$t$ lower bound (E) for $\Mnorm$; the
+numerator improvement $E_{k:n}\lesssim\xi^{\SP}(\dot z_{<k})/\xi^{\SP}(\dot z_{1:n})$
+for the active agent; and the bound of Problem 6.3 with the monotone conditional
+complexity $K_*$.
+
+\section*{Acknowledgments}
+\paragraph{Use of AI tools.}
+This work was carried out with substantial help from large language models.
+ChatGPT Pro (OpenAI) proposed the proof sketches and the Lean code. Claude
+(Anthropic) reviewed each formal statement against the problem text, refereed
+the paper proofs, searched the literature, and drafted this manuscript. Every
+theorem marked as formally verified was checked by the Lean~4 kernel with
+Mathlib and the \texttt{kolmogorov-complexity-lean} library; the statements,
+proofs and review notes are available at \repourl. The author is not a
+specialist in algorithmic information theory; the author directed the work and
+chose the problems and the checks. The correctness claims rest on the Lean
+verification and on the independent model reviews described in
+Section~\ref{sec:formal}. The author takes full responsibility for the content,
+including any errors.
+
+\bibliographystyle{plainurl}
+\setlength{\bibsep}{2pt plus 1pt}
+{\raggedright
+\bibliography{refs}
+\par}
+
+\end{document}

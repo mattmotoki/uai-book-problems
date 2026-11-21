@@ -1,0 +1,11 @@
+.lake/
+.desk/
+*.olean
+.DS_Store
+pro/**/*.url
+
+# Book PDF lives on the SSD, outside git (copyright).
+*.pdf
+docs/paper/*.pdf
+docs/paper/*.aux
+docs/paper/*.log

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hutter prizes: results 2026-11-21</title>
+<style>
+:root { --bg:#fbfaf7; --fg:#1d1d1b; --mut:#5d5b55; --line:#dedad0; --card:#ffffff; --ok:#1f6f43; --warn:#8a5a00; --code:#f1eee6; }
+@media (prefers-color-scheme: dark) { :root { --bg:#161614; --fg:#ecebe6; --mut:#a9a69c; --line:#34322d; --card:#1f1e1b; --ok:#6fcf97; --warn:#e3b45a; --code:#2a2925; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 -apple-system, "Segoe UI", system-ui, sans-serif; }
+main { max-width:900px; margin:0 auto; padding:28px 16px 60px; }
+h1 { font-size:1.6rem; margin:0 0 4px; } h2 { font-size:1.2rem; margin:34px 0 10px; border-bottom:1px solid var(--line); padding-bottom:6px; }
+.sub { color:var(--mut); margin:0 0 20px; }
+.card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin:12px 0; }
+.card h3 { margin:0 0 6px; font-size:1.05rem; }
+.tag { display:inline-block; font-size:.78rem; font-weight:600; padding:1px 8px; border-radius:99px; border:1px solid currentColor; margin-right:6px; }
+.ok { color:var(--ok); } .warn { color:var(--warn); }
+code { background:var(--code); padding:1px 5px; border-radius:4px; font-size:.88em; word-break:break-word; }
+blockquote { margin:8px 0; padding:8px 12px; border-left:3px solid var(--line); color:var(--fg); background:var(--code); border-radius:0 6px 6px 0; }
+ul { padding-left:20px; } li { margin:4px 0; }
+table { width:100%; border-collapse:collapse; font-size:.92rem; } td, th { text-align:left; vertical-align:top; padding:6px 8px; border-bottom:1px solid var(--line); }
+.mut { color:var(--mut); }
+</style>
+</head>
+<body>
+<main>
+<h1>Hutter prize problems: results</h1>
+<p class="sub">2026-11-21 · repo <code>~/repos/research/hutter-prizes</code> · rows marked Lean pass <code>scripts/check.sh</code> (no sorry, only the 3 standard axioms); rows marked Pro are unchecked proofs</p>
+
+<h2>Problem 3.3 (Comparing two mixtures, €50): answer "no"</h2>
+<div class="card">
+<p><span class="tag ok">Lean-checked</span><span class="tag ok">review: faithful with caveats</span></p>
+<p>Hutter asks: for two mixtures ξ, ξ′ over a class M, is L<sup>ξ</sup> − L<sup>ξ′</sup> &lt; ∞? Both totals are infinite, so the question is about the difference at time n. It grows without bound.</p>
+<blockquote>Let ν₀, ν₁, … enumerate (with repetitions) all lower semicomputable semimeasures with ν(ε) = 1. There are weights w⁻, w⁺, all positive, each summing to 1, with w⁻ᵢ/w⁺ᵢ ∈ [1/3, 3], such that ξ± = Σ w±ᵢ νᵢ are lower semicomputable, and an index j with ν<sub>j</sub> = μ a computable probability measure. For binary 0-1 loss (ties toward 1): L<sub>n</sub><sup>ξ⁻</sup> − L<sub>n</sub><sup>ξ⁺</sup> ≥ n<sup>1/4</sup>/256 for all n ≥ 2, so the difference tends to +∞.</blockquote>
+<ul>
+<li>Lean: <code>P33Mixture.mixture_counterexample</code>. Also a simpler version with two computable measures (gap ≥ (1/32)·H<sub>n</sub>, ties toward 0): <code>MixtureCounterexample.counterexample</code>.</li>
+<li>Idea: the source picks one finite experiment j with probability 2<sup>−j−1</sup> and biases 16<sup>j</sup> bits by 1/(32·4<sup>j</sup>). The two mixtures put weights ¼/¾ vs ¾/¼ on the two hypotheses, so they decide differently on a large part of each experiment.</li>
+<li>Caveats: ties broken toward 1 only; on paper (not Lean) the class extends to the book's M<sub>U</sub> with ν(ε) ≤ 1; weights are not the 2<sup>−K(ν)</sup> prior; n<sup>1/4</sup> agrees with the book's O(√L) upper bound.</li>
+<li>Antecedent: Hutter, JMLR 2003, p. 988 shows one mixture's regret against μ can diverge (same mechanism, not two mixtures).</li>
+</ul>
+</div>
+
+<h2>Problem 6.3 (Posterization, €100): last question answered "no"</h2>
+<div class="card">
+<p><span class="tag ok">Lean-checked</span><span class="tag ok">review: faithful with caveats</span></p>
+<p>Hutter asks whether the errors in cycles k..n can be bounded by ≈ 2<sup>K(z<sub>k:n</sub> | z<sub>&lt;k</sub>)</sup>.</p>
+<blockquote>With ordinary conditional prefix complexity, no constant C gives E<sub>k:n</sub> ≤ C·2<sup>K(z<sub>k:n</sub>|z<sub>&lt;k</sub>)</sup>. This holds for AIξ and for every other deterministic predictor.</blockquote>
+<ul>
+<li>Lean: <code>HutterPrizes.no_errorcount_complexity_bound</code>. Witness: x = 0<sup>m</sup>, where m is the binary number of the adversarial bits, so K(y|x) = O(1) while errors grow like log m.</li>
+<li>Caveats: it refutes the end of Hutter's chain, not the middle step (6.3N stays open); Chernov–Hutter's monotone K<sub>*</sub> version stays open.</li>
+<li>Antecedent: Chernov–Hutter, ALT 2005, Lemma 5 (same length trick, for one-step deviation of M).</li>
+</ul>
+</div>
+
+<h2>Other results</h2>
+<table>
+<tr><th>Problem</th><th>Result</th><th>Status</th></tr>
+<tr><td>2.7</td><td>Normalized M: NM(b|x) ≥ 2<sup>−(K(|x|+1)+C)</sup> for every x, b</td><td class="ok">Lean; known (Hutter 2007, eq. 17)</td></tr>
+<tr><td>6.3</td><td>M(x)/M(xy) ≤ C·2<sup>K(y|x)</sup> fails</td><td class="ok">Lean; known with a K(|x|) factor</td></tr>
+<tr><td>2.9</td><td>Upstream selected-bits theorems reproduced</td><td class="ok">Lean (upstream)</td></tr>
+<tr><td>2.3(a)</td><td>Reduced (fair coin) to one lemma GO(P)</td><td class="warn">Pro only; parked</td></tr>
+<tr><td>6.2(d)</td><td>Polynomial-in-K bound for AIξ: open; Leike–Hutter exclude horizon 1</td><td class="warn">Pro only; parked</td></tr>
+<tr><td>6.3N</td><td>Numerator question: open for AIξ; corrected bound with (m+1)·2<sup>K(m)</sup></td><td class="warn">Pro only; parked</td></tr>
+<tr><td>3.3 complexity</td><td>Same gap ≥ n<sup>1/4</sup>/256 with both priors within constant factors of 2<sup>−K(i)</sup></td><td class="ok">Lean (<code>P33Complexity.complexity_counterexample</code>); review: faithful with caveats</td></tr>
+<tr><td>3.3 exact 2<sup>−K</sup></td><td>Same gap with exact weights 2<sup>−K<sub>C</sub>(i)</sup> under two optimal prefix machines (universal mixtures, weight ratio ≤ 4)</td><td class="ok">Lean (<code>P33Exact.exact_counterexample</code>); review: faithful with caveats</td></tr>
+<tr><td>3.3 measures</td><td>Same gap over all computable probability measures (Hutter §3.2.2 reading); exact 2<sup>−K</sup> priors under two machines</td><td class="ok">Lean for computable measures with rational conditionals (<code>P33Measures.measure_class_counterexample</code>); all computable measures and exact 2<sup>−K</sup>: Pro proof, referee-checked</td></tr>
+<tr><td>2.7 stochastic</td><td>For every universal M and computable μ: expected normalized error ≥ c·2<sup>−K(t)</sup> infinitely often (once per dyadic block); O(2<sup>−K(t)</sup>) is not an upper bound</td><td class="ok">Theorem 1 in Lean (<code>P27Stochastic.expected_lower_bound_io</code>, review: faithful with caveats; rational conditionals); upper-bound result: Pro proof, referee-checked; not found in print</td></tr>
+<tr><td>2.7 eventual</td><td>Witnesses A<sub>t</sub> ≥ c·2<sup>−K(t)</sup> in every infinite c.e. set of times and every late window of length O(log t); every-large-t version open</td><td class="ok">Lean: <code>P27Selection.selection_lower_bound</code> (every computable selection) and <code>log_window_lower_bound</code> (O(log t) windows), rational conditionals; c.e.-set corollary: Pro proof, referee-checked</td></tr>
+<tr><td>2.7 upper side</td><td>For every universal V, some ½V + ½ν has fair-coin expected error above C·2<sup>−αK(t)</sup> infinitely often, for every α &gt; 0: no power of 2<sup>−K(t)</sup> is a general upper bound</td><td class="ok">Lean (<code>P27Spikes.no_power_upper_bound_mix</code>); review: faithful with caveats</td></tr>
+</table>
+
+<h2>Paper</h2>
+<p>Draft 2: <code>docs/paper/main.pdf</code> (21 pages). D2 answered: keep working before any contact.</p>
+</main>
+</body>
+</html>

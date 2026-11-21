@@ -1,0 +1,33 @@
+name = "hutter_prizes"
+version = "0.1.0"
+defaultTargets = ["HutterPrizes"]
+
+[leanOptions]
+pp.unicode.fun = true
+autoImplicit = false
+relaxedAutoImplicit = false
+
+# Mathlib at the same tag the upstream library uses.
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+git = "https://github.com/leanprover-community/mathlib4.git"
+rev = "v4.35.0"
+
+# Algorithmic information theory in Lean 4 (Milovanov). Pinned by commit.
+[[require]]
+name = "kolmogorov_complexity"
+git = "https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean.git"
+rev = "17c50e560c337a8a702f8850a711f80a56b3cf91"
+
+[[lean_lib]]
+name = "HutterPrizes"
+globs = ["HutterPrizes", "HutterPrizes.+"]
+allowNonModules = true
+
+# Frozen target statements; sorry allowed. Not built by default; check with
+# `lake env lean Targets/<File>.lean`.
+[[lean_lib]]
+name = "Targets"
+globs = ["Targets.+"]
+allowNonModules = true
